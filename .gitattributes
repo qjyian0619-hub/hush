@@ -1,0 +1,11 @@
+# KernelSU runs the module scripts with /system/bin/sh, which breaks on CRLF.
+# Keep every text file LF regardless of core.autocrlf.
+* text=auto eol=lf
+*.jks binary
+*.jar binary
+*.apk binary
+*.so binary
+*.zip binary
+*.tgz binary
+*.png binary
+*.db binary

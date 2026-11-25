@@ -1,0 +1,796 @@
+/*
+ * Region Guard WebUI 1.5
+ * Palette: Geist-style neutral scale with one blue accent and status colors.
+ * Layout: SwiftUI-style large title and inset grouped lists.
+ * Material: Liquid Glass only on floating controls (refresh button, time zone sheet).
+ */
+:root {
+  color-scheme: light dark;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans CJK SC", "PingFang SC", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", "Roboto Mono", "Droid Sans Mono", Menlo, Consolas, monospace;
+  font: 16px/1.5 var(--sans);
+  -webkit-text-size-adjust: 100%;
+
+  --bg: #fafafa;
+  --bg-subtle: #fafafa;
+  --surface: #ffffff;
+  --fill: #f2f2f2;
+  --fill-pressed: #ebebeb;
+  --border: #00000014;
+  --border-strong: #0000002e;
+  --text: #171717;
+  --text-2: #666666;
+  --text-3: #8f8f8f;
+  --accent: #0070f3;
+  --accent-text: #0062d1;
+  --primary: #171717;
+  --on-primary: #ffffff;
+  --switch-off: #e5e5e5;
+  --grid-dot: #00000021;
+
+  --green: #1f9d55;
+  --green-text: #18794e;
+  --green-soft: #1f9d5526;
+  --amber: #f5a623;
+  --amber-text: #9a5b00;
+  --amber-soft: #f5a62333;
+  --red: #e5484d;
+  --red-text: #c4252b;
+  --red-soft: #e5484d26;
+  --gray: #a1a1a1;
+  --gray-soft: #a1a1a12e;
+
+  --shadow-card: 0 1px 2px #0000000a;
+  --radius-card: 16px;
+
+  --glass-tint: #ffffff73;
+  --sheet-surface: #f5f5f5;
+  --glass-edge: #00000014;
+  --glass-rim: #ffffff;
+  --glass-rim-low: #ffffffb3;
+  --glass-highlight: #ffffffd9;
+  --glass-shade: #0000000d;
+  --glass-shadow: 0 1px 2px #0000000f, 0 8px 22px #00000014;
+  --glass-fill: #0000000d;
+  --scrim: #0000004d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --bg-subtle: #000000;
+    --surface: #0a0a0a;
+    --fill: #1f1f1f;
+    --fill-pressed: #262626;
+    --border: #ffffff1f;
+    --border-strong: #ffffff3d;
+    --text: #ededed;
+    --text-2: #a1a1a1;
+    --text-3: #707070;
+    --accent: #0a72ef;
+    --accent-text: #52a8ff;
+    --primary: #ededed;
+    --on-primary: #0a0a0a;
+    --switch-off: #333333;
+    --grid-dot: #ffffff24;
+
+    --green: #3ecf8e;
+    --green-text: #5fd39a;
+    --green-soft: #3ecf8e29;
+    --amber: #f5a623;
+    --amber-text: #ffb224;
+    --amber-soft: #f5a62329;
+    --red: #ff5a5f;
+    --red-text: #ff6b70;
+    --red-soft: #ff5a5f29;
+    --gray: #707070;
+    --gray-soft: #7070702e;
+
+    --shadow-card: 0 0 #0000;
+
+    --glass-tint: #ffffff12;
+    --sheet-surface: #141414;
+    --glass-edge: #ffffff17;
+    --glass-rim: #ffffffa6;
+    --glass-rim-low: #ffffff40;
+    --glass-highlight: #ffffff33;
+    --glass-shade: #00000066;
+    --glass-shadow: 0 1px 2px #0000004d, 0 10px 28px #00000099;
+    --glass-fill: #ffffff1a;
+    --scrim: #00000099;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Faint Geist-style dot grid behind the title; it also gives the glass something to refract. */
+body::before {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 300px;
+  content: "";
+  pointer-events: none;
+  background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 1px, transparent 1.5px);
+  background-size: 18px 18px;
+  -webkit-mask-image: radial-gradient(130% 100% at 50% 0%, #000 10%, transparent 72%);
+  mask-image: radial-gradient(130% 100% at 50% 0%, #000 10%, transparent 72%);
+}
+
+button, select, input { font: inherit; }
+
+button {
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:disabled { cursor: default; }
+label, summary { -webkit-tap-highlight-color: transparent; }
+
+:where(button, select, input, summary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.symbols {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* Page and navigation */
+
+.page {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(28px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 22px;
+}
+
+.brand {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--on-primary);
+  background: var(--primary);
+}
+
+.brand .icon { width: 22px; height: 22px; stroke-width: 1.9; }
+
+.nav h1 {
+  min-width: 0;
+  margin: 0;
+  font-size: clamp(1.6rem, 7vw, 1.9rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -.01em;
+}
+
+.icon-button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--text);
+}
+
+.icon-button[aria-busy="true"] .icon { animation: spin .9s linear infinite; }
+
+.layout { display: grid; gap: 22px; }
+
+/* Liquid Glass material: tint, specular rim, soft shadow, optional SVG refraction (glass.js). */
+
+.glass {
+  position: relative;
+  isolation: isolate;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--glass-edge), var(--glass-shadow);
+}
+
+.glass::before,
+.glass::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.glass::before {
+  padding: 1px;
+  background: linear-gradient(140deg, var(--glass-rim), transparent 34%, transparent 64%, var(--glass-rim-low));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+.glass::after {
+  box-shadow: inset 0 1px 1px var(--glass-highlight), inset 0 -1px 2px var(--glass-shade);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass {
+    --glass-blur: 1px;
+    background: var(--glass-tint);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+  }
+
+  .glass.lens {
+    -webkit-backdrop-filter: blur(var(--glass-blur)) var(--lens) saturate(170%);
+    backdrop-filter: blur(var(--glass-blur)) var(--lens) saturate(170%);
+  }
+}
+
+/* Status card (Geist deployment-card layout) */
+
+.card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.status {
+  --dot: var(--gray);
+  --dot-soft: var(--gray-soft);
+}
+
+.status[data-state="active"] { --dot: var(--green); --dot-soft: var(--green-soft); }
+.status[data-state="pending"] { --dot: var(--amber); --dot-soft: var(--amber-soft); }
+.status[data-state="error"] { --dot: var(--red); --dot-soft: var(--red-soft); }
+
+.status-head { padding: 20px; }
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: clamp(1.6rem, 7.4vw, 1.95rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -.01em;
+}
+
+.status-dot {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--dot);
+  box-shadow: 0 0 0 4px var(--dot-soft);
+}
+
+.status-dot::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  border-radius: inherit;
+  background: var(--dot);
+  opacity: 0;
+}
+
+.status-detail {
+  margin: 6px 0 0;
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.status[data-state="error"] .status-detail { color: var(--red-text); }
+
+.meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px 16px;
+  margin: 0;
+  padding: 15px 20px 17px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+
+.meta-item { min-width: 0; }
+
+.meta dt {
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.meta dd {
+  margin: 3px 0 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* Inset grouped list (SwiftUI Form) */
+
+.section-header {
+  margin: 0 0 8px;
+  padding: 0 16px;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  list-style: none;
+}
+
+.row {
+  position: relative;
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+}
+
+.row + .row::before,
+.zone-options li + li .zone-option::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 58px;
+  content: "";
+  border-top: 1px solid var(--border);
+}
+
+label.row:has(input:enabled) { cursor: pointer; }
+
+.tile {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--fill);
+}
+
+.tile .icon { width: 18px; height: 18px; }
+
+.row-title {
+  min-width: 0;
+  flex: 1;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.row-text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.row-subtitle {
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* Switch */
+
+.switch {
+  position: relative;
+  display: grid;
+  width: 51px;
+  height: 44px;
+  flex: none;
+  align-items: center;
+}
+
+.switch input {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.switch-track {
+  position: relative;
+  height: 31px;
+  border-radius: 999px;
+  background: var(--switch-off);
+  box-shadow: inset 0 0 0 1px var(--border);
+  transition: background-color .2s ease;
+}
+
+.switch-track::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  content: "";
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 5px #00000026, 0 0 0 .5px #0000000f;
+  transition: transform .26s cubic-bezier(.3, .7, .4, 1), width .18s ease;
+}
+
+.switch input:checked + .switch-track { background: var(--accent); box-shadow: none; }
+.switch input:checked + .switch-track::after { transform: translateX(20px); }
+.switch input:enabled:active + .switch-track::after { width: 33px; }
+.switch input:checked:enabled:active + .switch-track::after { transform: translateX(14px); }
+.switch input:focus-visible + .switch-track { outline: 2px solid var(--accent); outline-offset: 2px; }
+.switch input:disabled + .switch-track { opacity: .5; }
+
+/* Time zone picker row */
+
+.picker {
+  display: flex;
+  min-width: 0;
+  max-width: 62%;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-2);
+}
+
+.picker :is(select, button) {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  appearance: none;
+  padding: 0 2px;
+  border: 0;
+  color: var(--text-2);
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  text-align: right;
+  text-overflow: ellipsis;
+}
+
+.picker :is(select, button):disabled { color: var(--text-3); cursor: default; }
+
+#zone-value {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* The whole row opens the sheet, like a SwiftUI menu picker. */
+#zone-trigger::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+}
+
+#zone-trigger:focus-visible { outline: none; }
+#zone-trigger:focus-visible::after { outline: 2px solid var(--accent); outline-offset: -3px; border-radius: 12px; }
+
+.picker-icon { width: 16px; height: 16px; color: var(--text-3); }
+
+/* Actions */
+
+.button {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.button.primary {
+  margin-top: 14px;
+  color: var(--on-primary);
+  background: var(--primary);
+}
+
+.button.primary:disabled {
+  border-color: var(--border);
+  color: var(--text-3);
+  background: var(--fill);
+}
+
+.section-footer {
+  min-height: 1.45em;
+  margin: 8px 16px 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.section-footer:empty { min-height: 0; margin: 0; }
+.section-footer[data-kind="success"] { color: var(--green-text); }
+.section-footer[data-kind="error"] { color: var(--red-text); }
+
+/* Disclosure (help) */
+
+.disclosure summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.disclosure summary::-webkit-details-marker { display: none; }
+.disclosure summary:focus-visible { outline-offset: -3px; border-radius: var(--radius-card); }
+
+.disclosure-chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--text-3);
+}
+
+.disclosure[open] .disclosure-chevron { transform: rotate(180deg); }
+
+.disclosure-body {
+  padding: 0 16px 14px 58px;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.disclosure-body p { margin: 0 0 8px; }
+.disclosure-body p:last-child { margin-bottom: 0; }
+
+/* Time zone sheet */
+
+.sheet-dialog:not([open]) { display: none; }
+
+.sheet-dialog {
+  width: min(480px, calc(100% - 16px));
+  max-width: none;
+  max-height: calc(100% - 24px);
+  margin: auto auto max(8px, env(safe-area-inset-bottom));
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 32px;
+  color: var(--text);
+  background: none;
+}
+
+.sheet-dialog::backdrop { background: var(--scrim); }
+
+.sheet {
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 14px 10px 10px;
+  border-radius: inherit;
+  background: var(--surface);
+}
+
+/* The sheet keeps the glass rim, highlight and shadow but no backdrop blur: blurring the backdrop of
+   a moving sheet cost about 5 ms per frame on a 120 Hz, 3.5x phone screen and made the slide-in stutter. */
+.sheet.glass {
+  background: var(--sheet-surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 4px 12px 10px;
+}
+
+.sheet-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -.01em;
+}
+
+.close-button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--text-2);
+  background: var(--glass-fill);
+}
+
+.close-button .icon { width: 18px; height: 18px; }
+
+.zone-options { border-radius: 22px; }
+
+.zone-option {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 56px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.zone-options li + li .zone-option::before { left: 16px; }
+
+.zone-offset {
+  flex: none;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.zone-check {
+  color: var(--accent-text);
+  stroke-width: 2.2;
+  visibility: hidden;
+}
+
+.zone-option[aria-current="true"] .zone-check { visibility: visible; }
+.zone-option[aria-current="true"] .zone-option-label { font-weight: 650; }
+
+/* Pressed and hover feedback */
+
+label.row:has(input:enabled):active,
+.zone-row:has(#zone-trigger:enabled:active),
+.disclosure summary:active,
+.zone-option:active { background: var(--fill); }
+
+@media (hover: hover) {
+  label.row:has(input:enabled):hover,
+  .zone-row:has(#zone-trigger:enabled:hover),
+  .disclosure summary:hover,
+  .zone-option:hover { background: var(--bg-subtle); }
+  .button.primary:enabled:hover { opacity: .88; }
+  .close-button:hover { color: var(--text); }
+}
+
+/* Motion */
+
+@media (prefers-reduced-motion: no-preference) {
+  .icon-button, .button, .close-button { transition: transform .22s cubic-bezier(.3, .7, .4, 1.4), opacity .15s ease; }
+  .icon-button:enabled:active { transform: scale(1.08); }
+  :is(.button, .close-button):enabled:active { transform: scale(.98); }
+  .disclosure-chevron { transition: transform .2s ease; }
+  /* Pulse only while loading: an endless animation keeps the WebView redrawing every frame. */
+  .status[data-state="loading"] .status-dot::after { animation: pulse 1.6s ease-out infinite; }
+  /* Transform only, and no forwards fill: an opacity animation would make the dialog a backdrop root
+     and the glass sheet would stop blurring the page behind it. */
+  .sheet-dialog[open] { animation: sheet-in .38s cubic-bezier(.32, .72, 0, 1) backwards; }
+  .sheet-dialog[open]::backdrop { animation: fade-in .2s ease both; }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: .45; }
+  70%, 100% { transform: scale(2.8); opacity: 0; }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes sheet-in { from { transform: translateY(calc(100% + 24px)); } }
+@keyframes fade-in { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .switch-track, .switch-track::after { transition: none; }
+  .icon-button[aria-busy="true"] .icon { animation: none; }
+}
+
+/* Accessibility fallbacks: opaque surfaces, stronger lines, system colors. */
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .glass, .glass.lens, .sheet.glass {
+    background: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --border: var(--border-strong);
+    --text-2: var(--text);
+  }
+  body::before { display: none; }
+}
+
+@media (forced-colors: active) {
+  .switch input { opacity: 1; appearance: auto; }
+  .switch-track { display: none; }
+  .picker select { appearance: auto; }
+  .picker select:not([hidden]) ~ .picker-icon { display: none; }
+  body::before, .glass::before, .glass::after { display: none; }
+  .status-dot { border: 1px solid CanvasText; }
+  .zone-option[aria-current="true"] { outline: 2px solid Highlight; outline-offset: -2px; }
+}
+
+/* Sizes */
+
+@media (max-width: 350px) {
+  .page { padding-left: 12px; padding-right: 12px; }
+  .row { gap: 10px; padding: 8px 12px; }
+  .row + .row::before { left: 52px; }
+  .disclosure-body { padding-left: 52px; }
+  .status-head { padding: 16px; }
+  .meta { padding: 14px 16px 16px; gap: 12px; }
+}
+
+@media (min-width: 720px) {
+  .page {
+    padding: max(32px, env(safe-area-inset-top)) max(28px, env(safe-area-inset-right))
+      max(32px, env(safe-area-inset-bottom)) max(28px, env(safe-area-inset-left));
+  }
+  .layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 22px 24px;
+    align-items: start;
+  }
+  .disclosure { grid-column: 1 / -1; }
+  /* Line the status card up with the settings list, which sits under a section header. */
+  .status { margin-top: calc(13px * 1.5 + 8px); }
+  .sheet-dialog { margin: auto; }
+}

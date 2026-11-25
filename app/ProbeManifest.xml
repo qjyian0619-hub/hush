@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.local.regionguard.probe" android:versionCode="1" android:versionName="1.0">
+  <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="36" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+  <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+  <application android:label="地区隐私 · 离线检测" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false" android:debuggable="true">
+    <activity android:name="dev.local.regionguard.ProbeActivity" android:exported="true" />
+  </application>
+</manifest>

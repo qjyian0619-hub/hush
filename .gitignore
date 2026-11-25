@@ -1,0 +1,7 @@
+deps/
+signing/
+evidence/
+dist/
+backup/
+build/
+__pycache__/

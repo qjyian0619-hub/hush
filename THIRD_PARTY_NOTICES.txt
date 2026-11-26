@@ -1,4 +1,4 @@
-Apache 2.0 license for the packaged KernelSU JavaScript SDK.
+Apache 2.0 license for libxposed and the KernelSU JavaScript SDK.
 
 
                                  Apache License
@@ -180,9 +180,22 @@ Apache 2.0 license for the packaged KernelSU JavaScript SDK.
 
 
 
-Xposed API 82 (compile-time only, not packaged)
-Source: https://api.xposed.info/de/robv/android/xposed/api/82/api-82.jar
-Documentation: https://api.xposed.info/
+libxposed API 102.0.0 (compile-time dependency; the framework supplies it at runtime)
+Copyright libxposed contributors. Licensed under Apache-2.0 (license text above).
+Upstream: https://github.com/libxposed/api/releases/tag/102.0.0
+Download: https://repo.maven.apache.org/maven2/io/github/libxposed/api/102.0.0/api-102.0.0.aar
+SHA256: 423484a6e1807e7a423c4b88fcd8176d104318259d91791877fed88fe91479d0
+Local file: deps/libxposed-api-102.0.0.aar
+
+libxposed Service and Binder Interface 102.0.0 (packaged in the backend APK)
+Copyright libxposed contributors. Licensed under Apache-2.0 (license text above).
+Upstream: https://github.com/libxposed/service/releases/tag/102.0.0
+Download: https://repo.maven.apache.org/maven2/io/github/libxposed/service/102.0.0/service-102.0.0.aar
+SHA256: a665e4af4638924047f5d5cb610553e15bc2c0ea2ce64a27afb6dee257ff014c
+Local file: deps/libxposed-service-102.0.0.aar
+Download: https://repo.maven.apache.org/maven2/io/github/libxposed/interface/102.0.0/interface-102.0.0.aar
+SHA256: 4e0b76d6050be1d3dc0d35525180ad7d9b60a47fd8d8fe1d18c2bdc840be9ddb
+Local file: deps/libxposed-interface-102.0.0.aar
 
 KernelSU JavaScript SDK 3.3.0
 Copyright KernelSU contributors. Licensed under Apache-2.0 (license text above).

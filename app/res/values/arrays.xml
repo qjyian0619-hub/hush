@@ -1,6 +1,0 @@
-<resources><string-array name="scope">
-  <item>com.anthropic.claude</item><item>com.anthropic.aibo</item>
-  <item>com.android.chrome</item><item>com.microsoft.emmx</item>
-  <item>mark.via</item><item>com.quark.browser</item>
-  <item>dev.local.regionguard.probe</item>
-</string-array></resources>

@@ -1,13 +1,14 @@
 package dev.local.regionguard;
 
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 import android.content.SharedPreferences;
 
 public final class Profile {
     public static final String PACKAGE = "dev.local.regionguard";
     public static final String PREFS = "profile";
-    public static final String VERSION = "1.8";
+    public static final String VERSION = "1.9.1";
     public static final String DEFAULT_ZONE = "America/Los_Angeles";
     public static final String[] ZONES = {DEFAULT_ZONE, "America/New_York", "Asia/Tokyo", "Europe/London", "UTC"};
     public static final String[] ZONE_LABELS = {"加州 / 洛杉矶（自动夏令时）", "美国东部 / 纽约", "日本 / 东京", "英国 / 伦敦", "UTC"};
@@ -16,20 +17,26 @@ public final class Profile {
     public final Locale locale;
     public final boolean enabled;
     public final boolean browsers;
+    public final boolean managed;
     public final boolean managerEnabled;
     public Profile(SharedPreferences preferences) {
-        String candidate = preferences == null ? DEFAULT_ZONE : preferences.getString("zone", DEFAULT_ZONE);
+        Map<String, ?> values = preferences.getAll();
+        String candidate = (String) value(values, "zone", DEFAULT_ZONE);
         boolean valid = false;
         for (String item : TimeZone.getAvailableIDs()) if (item.equals(candidate)) {valid = true; break;}
         zone = valid ? candidate : DEFAULT_ZONE;
         language = "en-US";
         locale = Locale.forLanguageTag(language);
-        enabled = preferences == null || preferences.getBoolean("enabled", true);
-        browsers = preferences == null || preferences.getBoolean("browsers", true);
-        boolean managed = preferences != null && preferences.getBoolean("ksu_managed", false);
+        enabled = (Boolean) value(values, "enabled", true);
+        browsers = (Boolean) value(values, "browsers", true);
+        managed = (Boolean) value(values, "ksu_managed", false);
         String boot = bootMarker();
-        managerEnabled = managed && (preferences.getBoolean("ksu_enabled", false) && !boot.isEmpty()
-            && boot.equals(preferences.getString("ksu_boot", "")));
+        managerEnabled = managed && (Boolean) value(values, "ksu_enabled", false) && !boot.isEmpty()
+            && boot.equals(value(values, "ksu_boot", ""));
+    }
+    private static Object value(Map<String, ?> values, String key, Object fallback) {
+        Object value = values.get(key);
+        return value == null ? fallback : value;
     }
     /**
      * Identifies the current boot, read the same way in the backend and in every hooked app. Apps may not

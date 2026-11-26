@@ -15,13 +15,20 @@ public final class ControlProvider extends ContentProvider {
     @Override public Bundle call(String method,String arg,Bundle extras) {
         int uid = Binder.getCallingUid();
         if (uid != 0 && uid != 1000 && uid != 2000 && uid != Process.myUid()) throw new SecurityException("Root/shell control only");
+        ProfileService.callStarted();
+        long identity = Binder.clearCallingIdentity();
         try {
             Intent intent = new Intent();
             if (extras != null) intent.putExtras(extras);
             intent.putExtra("operation",method);
             ControlReceiver.execute(getContext(),intent);
             Bundle result = new Bundle(); result.putBoolean("ok",true); return result;
-        } catch (Exception error) {throw new IllegalStateException("Region Guard control failed",error);}
+        } catch (Exception error) {
+            throw new IllegalStateException("Region Guard control failed: " + error.getMessage(), error);
+        } finally {
+            Binder.restoreCallingIdentity(identity);
+            ProfileService.callFinished();
+        }
     }
     @Override public Cursor query(Uri uri,String[] projection,String selection,String[] arguments,String sort) {throw new UnsupportedOperationException();}
     @Override public String getType(Uri uri) {return null;}

@@ -11,7 +11,8 @@ source_files = []
 # Source archive: code and docs only. No phone backups, evidence or signing key.
 for folder in ("app", "ksu-module", "scripts", "tools"):
     source_files += [p for p in (root/folder).rglob("*") if p.is_file() and "__pycache__" not in p.parts]
-source_files += [root/p for p in ("README.md", "THIRD_PARTY_NOTICES.txt", ".gitignore", "deps/xposed-api-82.jar")]
+source_files += [root/p for p in ("README.md", "THIRD_PARTY_NOTICES.txt", ".gitignore")]
+source_files += [root/"deps"/f"libxposed-{name}-102.0.0.aar" for name in ("api", "service", "interface")]
 with ZipFile(dist/ksu_package, "w", ZIP_DEFLATED) as archive:
     for path in (root/"ksu-module").rglob("*"):
         if path.is_file():

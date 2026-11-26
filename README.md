@@ -1,12 +1,12 @@
-# 地区隐私 / Region Guard 1.8
+# 地区隐私 / Region Guard 1.9.1
 
 这是为当前连接的 Android 16 / arm64 / KernelSU / LSPosed 2.2.1 手机制作的应用级隐私模块。默认 **English (en-US) + America/Los_Angeles**，按真实时区数据库处理夏令时。手机整机仍使用原有的中文、上海时区；电话、移动数据、热点、FlClash 和系统服务没有被修改。安装和测试均未重启手机。
 
-配置入口为 **KernelSU → 模块 → 地区隐私 → WebUI / 执行**。安装包为 `dist/regionguard-ksu-1.8.zip`。1.8 新增 Zygisk 部分，修正 Chrome / Edge 冷启动后第一个网页的时区，**需重启一次生效**（见下文「首屏时区」）。1.7 把「浏览器兼容」改名为「浏览器保护」，并让 Chrome / Edge 每次启动时由钩子重设网页语言、WebRTC 与定位配置，不再只靠电脑端写入一次。1.5、1.6 只更新 WebUI；1.6 精简了界面文字，并让时区面板滑入保持流畅。1.4 移除了内置网页入口和对应的浏览组件。
+配置入口为 **KernelSU → 模块 → 地区隐私 → WebUI / 执行**。安装包为 `dist/regionguard-ksu-1.9.1.zip`。1.9.1 修复 LSPosed 配置服务断开后的恢复，后台返回错误后会自动退出，下次调用重新连接。1.9 将 Java 与原生入口迁至 libxposed API 102，配置通过 LSPosed 远程偏好同步。已加载 1.8 的 Zygisk 库时，覆盖安装 1.9.1 后重新打开作用域内的应用即可。1.8 新增 Zygisk 部分，修正 Chrome / Edge 冷启动后第一个网页的时区，**首次安装该部分需重启一次生效**（见下文「首屏时区」）。1.7 把「浏览器兼容」改名为「浏览器保护」，并让 Chrome / Edge 每次启动时由钩子重设网页语言、WebRTC 与定位配置，不再只靠电脑端写入一次。1.5、1.6 只更新 WebUI；1.6 精简了界面文字，并让时区面板滑入保持流畅。1.4 移除了内置网页入口和对应的浏览组件。
 
 WebUI 首页是状态卡和分组设置。状态卡显示已保存的语言、时区、该时区当地时间与浏览器保护开关，界面只用中文。配色为 Geist 式中性灰阶，配一种蓝色强调色和绿 / 黄 / 红状态色。布局采用 SwiftUI 式大标题与分组列表。刷新按钮使用玻璃材质：CSS 绘制模糊、色调与高光边缘；在 Chromium WebView 中，`glass.js` 用本地画布生成位移贴图，加上边缘折射和轻微色散。时区面板保留高光边缘与阴影，但不做背景模糊：在这台 120 Hz、3.5 倍密度的手机上，面板滑入时实时模糊背景每帧多约 5 ms，会掉帧。开启“减少透明度”或“高对比度”时改用实色底。时区面板标出当前所选项和 UTC 偏移，选好后在设置页保存。浅色和深色随 WebView 外观切换，旧版 WebView 可通过系统选择器选时区。界面参考 [Geist](https://vercel.com/geist)、[SwiftUI.js](https://github.com/swiftuijs/ui) 和 [Liquid Glass React](https://github.com/rdev/liquid-glass-react)，未复制其代码。
 
-底层依赖已启用的 LSPosed。ZIP 内含提供应用进程钩子和配置存储的后台 APK，可在 Android 应用管理和 LSPosed 列表里找到。KSU WebUI 只加载本地文件。
+底层依赖支持 libxposed API 102 且已启用的 LSPosed（已核对 2.2.1）。ZIP 内含提供应用进程钩子和配置入口的后台 APK，可在 Android 应用管理和 LSPosed 列表里找到。KSU WebUI 只加载本地文件。
 
 在这台已准备好的手机上，通过电脑安装并免重启激活：
 
@@ -27,7 +27,7 @@ WebUI 首页是状态卡和分组设置。状态卡显示已保存的语言、�
 | `dist/` | 当前产物：KSU ZIP、后台 APK、检测 APK、源码 ZIP、还原 ZIP 和 `SHA256SUMS.txt`；旧版本在 `dist/archive/` |
 | `backup/` | 这台手机的设备标识与原始设置，还原时必需；另有桌面数据库的早期备份 |
 | `evidence/` | 实测记录：`probe/` 离线检测、`browser/` 浏览器测试、`system/` 模块与 VPN 状态、`screenshots/` 截图、`ui-dumps/` 界面结构 |
-| `deps/` | 编译依赖（Xposed API、KernelSU JS SDK）；`deps/unused/` 是构建不再使用的旧下载 |
+| `deps/` | libxposed API、service 与 Binder interface 构件，另有 KernelSU JS SDK；`deps/unused/` 存放旧下载 |
 | `signing/` | 本地签名密钥 |
 
 ## 日常使用
@@ -36,7 +36,7 @@ WebUI 首页是状态卡和分组设置。状态卡显示已保存的语言、�
 2. Claude 原生应用可以正常从原图标打开。修改时区后需要强行停止、重新打开这些应用。
 3. 用常用浏览器访问网页时，由 VPN 接管网页流量。要保护 Chrome、Edge、Via 或夸克打开的网页，在 LSPosed 勾选浏览器，并在 WebUI 开启并保存「浏览器保护」。
 
-KSU 模块开关由一个轻量本地状态监视进程同步到后台配置，通常在 2 秒内生效；作用域内的应用仍需重新打开才能改变已加载钩子的状态。配置绑定本次启动标记，因此 KSU 模块在下次启动时未运行，后台不会沿用上一轮启动的开启状态。标记由后台在应用进程内读取（优先 `ro.runtime.firstboot`，在这台手机上实际为内核 `boot_id`），与被注入应用的读法一致；1.1–1.7 使用的 `ro.boottime.init` 受 SELinux 限制，普通应用读不到，导致重启后所有应用的保护静默失效（1.8 修复，`bridge.sh status` 的 `bootSource` 显示所用来源）。被注入应用因此跳过保护时，LSPosed 日志会记录 `inactive package=…`。LSPosed 的地区隐私也需要保持启用。
+KSU 模块开关由一个轻量本地状态监视进程同步到 LSPosed 远程偏好，通常在 2 秒内生效；作用域内的应用仍需重新打开才能改变已加载钩子的状态。从 1.8 或更早版本首次迁移到远程配置时，后台会导入已发布到 `ksu-state.json` 的时区和保护开关，KSU 状态由监视进程重新同步。只有冷启动尚未收到 Binder 时最多等待 5 秒。连接断开或远程提交失败时，控制接口返回错误，后台退出后由下次调用冷启动。原生设置页会在退出前提示，并在重新打开时恢复未保存的选择。配置绑定本次启动标记，读取失败或本次启动未同步时，应用保持未保护状态。标记由后台在应用进程内读取（优先 `ro.runtime.firstboot`，在这台手机上实际为内核 `boot_id`），与被注入应用的读法一致；1.1–1.7 使用的 `ro.boottime.init` 受 SELinux 限制，普通应用读不到，导致重启后所有应用的保护静默失效（1.8 修复，`bridge.sh status` 的 `bootSource` 显示所用来源）。被注入应用因此跳过保护时，LSPosed 日志会记录 `inactive package=…`。LSPosed 的地区隐私也需要保持启用。
 
 1.1 的升级验证覆盖 KSU WebUI 实际加载、通过页面保存东京时区、离线应用/网页同步切换、KSU 停用后新进程不加载保护、重新启用后恢复、桌面入口数量为 0。已恢复英语和加州配置。相关证据为 `evidence/screenshots/ksu-webui.png` 以及 `evidence/probe/` 下的 `ksu-probe-tokyo.json`、`ksu-probe-disabled.json` 与 `ksu-probe-final.json`。
 
@@ -47,7 +47,7 @@ KSU 模块开关由一个轻量本地状态监视进程同步到后台配置，�
 - 拦截定位读取和位置更新请求；按应用设置位置、Wi-Fi 扫描、电话状态、电话号码和蓝牙扫描 AppOps 为 ignore。
 - 屏蔽 Wi-Fi SSID、BSSID、MAC 和扫描列表。
 - 应用内 Java Locale、LocaleList、资源 Configuration 的语言、MCC/MNC、Java / ICU 时区、系统属性读取。
-- 使用 LSPosed 原生接口拦截 libc 的 `__system_property_get`、`__system_property_read`、`__system_property_read_callback`，覆盖常见 SIM、地区、语言和时区属性。没有修改全局属性值。
+- 使用通过 `META-INF/xposed/native_init.list` 注册的 LSPosed 原生钩子拦截 libc 的 `__system_property_get`、`__system_property_read`、`__system_property_read_callback`，覆盖作用域内的 SIM、地区、语言和时区属性。
 - 浏览器保护：浏览器进程内的语言、时区与定位钩子；Chrome / Edge 每次启动时，在浏览器读取配置前重设 `intl.accept_languages` / `intl.selected_languages` 为英语、`webrtc.ip_handling_policy` 为 `disable_non_proxied_udp`（WebRTC 不收集任何本地或 STUN 候选）、网页定位与传感器为拒绝。写入在浏览器自身进程完成，保持原有属主和 SELinux 标签。关闭开关只停止重设，已写入的值保留，原值由 `setup.ps1 -Restore` 还原。
 
 当前作用域：
@@ -97,8 +97,8 @@ KSU 模块开关由一个轻量本地状态监视进程同步到后台配置，�
 & 'C:\codex\模块\claude-region-guard\scripts\build.ps1'
 ```
 
-本地签名保存在 `signing/local.jks`，源码分发 ZIP 不包含此私钥。设备辅助脚本为 `scripts/setup.ps1`，只在人工运行时执行，不设置开机服务。`tools/audit_vpn.py` 只读审计；`tools/diagnostic/diagnostic_server.py` 只绑定电脑回环地址，配合临时 ADB reverse 做本地浏览器测试。
+构建需要现有的 `signing/local.jks`，以便在手机上覆盖安装。源码分发 ZIP 不包含此私钥。设备辅助脚本为 `scripts/setup.ps1`，只在人工运行时执行，不设置开机服务。`tools/audit_vpn.py` 只读审计；`tools/diagnostic/diagnostic_server.py` 只绑定电脑回环地址，配合临时 ADB reverse 做本地浏览器测试。
 
-`ksu-module/` 包含 KSU 的 WebUI、入口、安装及生命周期脚本。`service.sh` 启动本模块自身的状态同步进程，不配置网络或系统挂载。修改 WebUI 或重建 APK 后运行 `python scripts\package_outputs.py`，即可重新打包 KSU ZIP、源码 ZIP 和还原 ZIP。当前保留旧 Xposed API 的兼容实现，LSPosed 的 legacy 警告仍可能显示；这次入口整合没有把底层迁移到新 API。
+`ksu-module/` 包含 KSU 的 WebUI、入口、安装及生命周期脚本。`service.sh` 启动本模块自身的状态同步进程，不配置网络或系统挂载。修改 WebUI 或重建 APK 后运行 `python scripts\package_outputs.py`，即可重新打包 KSU ZIP、源码 ZIP 和还原 ZIP。Java 入口、原生入口、API 版本和推荐作用域均从 APK 内的 `META-INF/xposed/` 读取。
 
-依赖 Xposed API 82（编译期）和 KernelSU JS SDK 3.3.0。来源及许可证见 `THIRD_PARTY_NOTICES.txt`。框架接口说明见 [LSPosed 原生钩子](https://github.com/LSPosed/LSPosed/wiki/Native-Hook)、[配置共享](https://github.com/LSPosed/LSPosed/wiki/New-XSharedPreferences) 和 [KernelSU WebUI](https://kernelsu.org/guide/module-webui.html)。
+构建使用 Maven Central 发布的 libxposed API、service、Binder interface 102.0.0，以及 KernelSU JS SDK 3.3.0。API 由框架在运行时提供，service 与 Binder interface 随后台 APK 打包。依赖下载地址、SHA256 和许可证见 `THIRD_PARTY_NOTICES.txt`，后台 APK 内也附有许可说明。接口文档见 [LSPosed 现代模块 API](https://github.com/LSPosed/LSPosed/wiki/Develop-Xposed-Modules-Using-Modern-Xposed-API)、[LSPosed 原生钩子](https://github.com/LSPosed/LSPosed/wiki/Native-Hook)、[libxposed service](https://github.com/libxposed/service) 和 [KernelSU WebUI](https://kernelsu.org/guide/module-webui.html)。

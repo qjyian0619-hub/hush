@@ -10,8 +10,22 @@ shift
 state_file=/data/user/0/dev.local.regionguard/files/ksu-state.json
 error() { echo '{"ok":false,"error":"Backend communication failed. Check that LSPosed and Region Guard are enabled."}'; exit 1; }
 call_backend() {
-  result=$(/system/bin/content call --user 0 --uri content://dev.local.regionguard.control "$@" 2>&1) || error
-  case "$result" in *'ok=true'*) ;; *) error ;; esac
+  if result=$(/system/bin/content call --user 0 --uri content://dev.local.regionguard.control "$@" 2>&1); then
+    case "$result" in *'ok=true'*) return 0 ;; esac
+  fi
+  backend_pid=$(printf '%s\n' "$result" | sed -n 's/.*RegionGuard restarting pid=\([0-9][0-9]*\).*/\1/p' | head -n 1)
+  if [ -n "$backend_pid" ]; then
+    # Keep the control lock until the retiring process has had time to exit after replying.
+    for attempt in 1 2 3 4 5 6 7 8 9 10; do
+      case " $(pidof dev.local.regionguard) " in
+        *" $backend_pid "*) sleep 0.1 ;;
+        *) break ;;
+      esac
+    done
+    echo '{"ok":false,"error":"LSPosed configuration is unavailable. The backend will reconnect on the next request."}'
+    exit 1
+  fi
+  error
 }
 # Prints the backend state. Also publishes the renderer time zone that the Zygisk companion hands to
 # Chrome and Edge, only while protection, browser protection and the KSU module are on this boot.

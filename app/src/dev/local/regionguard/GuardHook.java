@@ -2,6 +2,7 @@ package dev.local.regionguard;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.location.LocationManager;
@@ -12,53 +13,52 @@ import android.system.Os;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
+import android.util.Log;
+import io.github.libxposed.api.XposedModule;
+import io.github.libxposed.api.error.XposedFrameworkError;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
-import de.robv.android.xposed.IXposedHookLoadPackage;
-import de.robv.android.xposed.IXposedHookZygoteInit;
-import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XSharedPreferences;
-import de.robv.android.xposed.XposedBridge;
-import de.robv.android.xposed.XposedHelpers;
-import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
-public final class GuardHook implements IXposedHookLoadPackage, IXposedHookZygoteInit {
-    private static String modulePath;
-    private static boolean installed;
+public final class GuardHook extends XposedModule {
     private static final Set<String> BROWSERS = new HashSet<>(Arrays.asList("com.android.chrome", "com.microsoft.emmx", "mark.via", "com.quark.browser"));
+    private String processName;
+    private boolean installed;
     private Profile profile;
     private int hookCount;
 
-    @Override public void initZygote(StartupParam param) { modulePath = param.modulePath; }
+    @Override public void onModuleLoaded(ModuleLoadedParam param) { processName = param.getProcessName(); }
 
-    @Override public void handleLoadPackage(XC_LoadPackage.LoadPackageParam param) {
+    @Override public synchronized void onPackageReady(PackageReadyParam param) {
+        String packageName = param.getPackageName();
+        ApplicationInfo appInfo = param.getApplicationInfo();
         // LSPosed scope is the explicit allowlist. Never hook critical system processes.
-        if (installed || param.packageName.equals(Profile.PACKAGE) || param.appInfo == null || param.appInfo.uid < 10000
-                || param.packageName.equals("com.android.systemui") || param.packageName.equals("com.android.settings")) return;
-        XSharedPreferences preferences = null;
-        try { preferences = new XSharedPreferences(Profile.PACKAGE, Profile.PREFS); preferences.reload(); }
-        catch (Throwable ignored) {}
-        profile = new Profile(preferences);
-        if (profile.enabled && !profile.managerEnabled && param.isFirstApplication) {
-            log("inactive package=" + param.packageName + ": KernelSU module state not synced for this boot (marker "
+        if (installed || packageName.equals(Profile.PACKAGE) || appInfo == null || appInfo.uid < 10000
+                || packageName.equals("com.android.systemui") || packageName.equals("com.android.settings")) return;
+        try {
+            profile = new Profile(getRemotePreferences(Profile.PREFS));
+        } catch (RuntimeException | XposedFrameworkError error) {
+            if (param.isFirstPackage()) log("inactive package=" + packageName + ": remote preferences unavailable: " + error);
+            return;
+        }
+        if (profile.enabled && !profile.managerEnabled && param.isFirstPackage()) {
+            log("inactive package=" + packageName + ": KernelSU module state not synced for this boot (marker "
                 + (Profile.bootMarker().isEmpty() ? "unreadable" : "mismatch") + ")");
         }
-        if (!profile.enabled || !profile.managerEnabled || (BROWSERS.contains(param.packageName) && !profile.browsers)) return;
+        if (!profile.enabled || !profile.managerEnabled || (BROWSERS.contains(packageName) && !profile.browsers)) return;
         installed = true;
         // Only the main browser process writes the profile, and it has not read it yet at this point.
-        if (BROWSERS.contains(param.packageName) && param.packageName.equals(param.processName)) browserSettings(param.appInfo.dataDir);
+        if (BROWSERS.contains(packageName) && packageName.equals(processName)) browserSettings(appInfo.dataDir);
         System.setProperty("regionguard.active", Profile.VERSION);
         System.setProperty("regionguard.zone", profile.zone);
         try {
             try { System.loadLibrary("regionguard"); }
-            catch (UnsatisfiedLinkError first) { System.load(modulePath + "!/lib/arm64-v8a/libregionguard.so"); }
+            catch (UnsatisfiedLinkError first) { System.load(getModuleApplicationInfo().sourceDir + "!/lib/arm64-v8a/libregionguard.so"); }
             NativeBridge.configure(profile.zone);
             System.setProperty("regionguard.native", NativeBridge.probe());
         } catch (Throwable error) { log("native unavailable: " + error); }
@@ -67,17 +67,19 @@ public final class GuardHook implements IXposedHookLoadPackage, IXposedHookZygot
         locationHooks();
         wifiHooks();
         propertyHooks();
-        browserHooks(param.classLoader);
-        XposedBridge.hookAllMethods(Application.class, "attach", new XC_MethodHook() {
-            @Override protected void afterHookedMethod(MethodHookParam p) {
-                Context context = (Context) p.args[0];
+        browserHooks(param.getClassLoader());
+        hookNamed(Application.class, "attach", chain -> {
+            try {
+                return chain.proceed();
+            } finally {
                 try {
+                    Context context = (Context) chain.getArg(0);
                     Configuration configuration = context.getResources().getConfiguration();
                     configuration.setLocales(new LocaleList(profile.locale));
                     configuration.mcc = 0; configuration.mnc = 0;
                     context.getResources().updateConfiguration(configuration, context.getResources().getDisplayMetrics());
                 } catch (Throwable ignored) {}
-                log("active package=" + param.packageName + " process=" + param.processName + " hooks=" + hookCount
+                log("active package=" + packageName + " process=" + processName + " hooks=" + hookCount
                     + " zone=" + TimeZone.getDefault().getID() + " locale=" + Locale.getDefault().toLanguageTag()
                     + " native=" + System.getProperty("regionguard.native", "unavailable"));
             }
@@ -94,9 +96,7 @@ public final class GuardHook implements IXposedHookLoadPackage, IXposedHookZygot
         System.setProperty("user.country", "US");
         try { Os.setenv("TZ", profile.zone, true); } catch (Throwable ignored) {}
         for (String name : new String[]{"getDefault", "getDefaultRef"}) {
-            hook(TimeZone.class, name, new XC_MethodHook() {
-                @Override protected void beforeHookedMethod(MethodHookParam p) { p.setResult(timezone.clone()); }
-            });
+            hookCount += hookNamed(TimeZone.class, name, chain -> timezone.clone());
         }
         constant(Locale.class, "getDefault", profile.locale);
         constant(LocaleList.class, "getDefault", new LocaleList(profile.locale));
@@ -104,22 +104,23 @@ public final class GuardHook implements IXposedHookLoadPackage, IXposedHookZygot
         constant(Configuration.class, "getLocales", new LocaleList(profile.locale));
         constant(android.icu.util.ULocale.class, "getDefault", android.icu.util.ULocale.forLocale(profile.locale));
         android.icu.util.TimeZone icuZone = android.icu.util.TimeZone.getTimeZone(profile.zone);
-        try { XposedHelpers.callStaticMethod(android.icu.util.TimeZone.class, "setDefault", icuZone); } catch (Throwable ignored) {}
-        hook(android.icu.util.TimeZone.class, "getDefault", new XC_MethodHook() {
-            @Override protected void beforeHookedMethod(MethodHookParam p) { p.setResult(icuZone.clone()); }
+        try {
+            Method setDefault = android.icu.util.TimeZone.class.getDeclaredMethod("setDefault", android.icu.util.TimeZone.class);
+            setDefault.setAccessible(true);
+            setDefault.invoke(null, icuZone);
+        } catch (Throwable ignored) {}
+        hookCount += hookNamed(android.icu.util.TimeZone.class, "getDefault", chain -> icuZone.clone());
+        hookCount += hookNamed(Resources.class, "getConfiguration", chain -> {
+            Object result = chain.proceed();
+            if (!(result instanceof Configuration)) return result;
+            Configuration copy = new Configuration((Configuration) result);
+            copy.setLocales(new LocaleList(profile.locale)); copy.mcc = 0; copy.mnc = 0;
+            return copy;
         });
-        hook(Resources.class, "getConfiguration", new XC_MethodHook() {
-            @Override protected void afterHookedMethod(MethodHookParam p) {
-                if (!(p.getResult() instanceof Configuration)) return;
-                Configuration copy = new Configuration((Configuration) p.getResult());
-                copy.setLocales(new LocaleList(profile.locale)); copy.mcc = 0; copy.mnc = 0;
-                p.setResult(copy);
-            }
-        });
-        Class<?> localeManager = XposedHelpers.findClassIfExists("android.app.LocaleManager", null);
+        Class<?> localeManager = findClass("android.app.LocaleManager", null);
         constant(localeManager, "getSystemLocales", new LocaleList(profile.locale));
         constant(localeManager, "getApplicationLocales", new LocaleList(profile.locale));
-        Class<?> timezoneGetter = XposedHelpers.findClassIfExists("libcore.util.TimezoneGetter", null);
+        Class<?> timezoneGetter = findClass("libcore.util.TimezoneGetter", null);
         constant(timezoneGetter, "getId", profile.zone);
     }
 
@@ -157,13 +158,11 @@ public final class GuardHook implements IXposedHookLoadPackage, IXposedHookZygot
         constant(LocationManager.class, "isProviderEnabled", false);
         constant(LocationManager.class, "isLocationEnabled", false);
         for (String name : new String[]{"requestLocationUpdates", "requestSingleUpdate", "getCurrentLocation"}) {
-            hook(LocationManager.class, name, new XC_MethodHook() {
-                @Override protected void beforeHookedMethod(MethodHookParam p) {
-                    p.setThrowable(new SecurityException("Location access disabled by RegionGuard"));
-                }
-            });
+            hookCount += hookNamed(LocationManager.class, name, chain -> {
+                throw new SecurityException("Location access disabled by RegionGuard");
+            }, ExceptionMode.PASSTHROUGH);
         }
-        constant(XposedHelpers.findClassIfExists("android.location.Geocoder", null), "isPresent", false);
+        constant(findClass("android.location.Geocoder", null), "isPresent", false);
     }
 
     private void wifiHooks() {
@@ -174,7 +173,7 @@ public final class GuardHook implements IXposedHookLoadPackage, IXposedHookZygot
         constant(WifiManager.class, "getConfiguredNetworks", Collections.emptyList());
         constant(WifiManager.class, "getPrivilegedConfiguredNetworks", Collections.emptyList());
         constant(WifiManager.class, "startScan", false);
-        constant(XposedHelpers.findClassIfExists("android.net.NetworkInfo", null), "getExtraInfo", "");
+        constant(findClass("android.net.NetworkInfo", null), "getExtraInfo", "");
     }
 
     private String property(String key) {
@@ -190,25 +189,23 @@ public final class GuardHook implements IXposedHookLoadPackage, IXposedHookZygot
     }
 
     private void propertyHooks() {
-        XC_MethodHook localeSetting = new XC_MethodHook() {
-            @Override protected void beforeHookedMethod(MethodHookParam p) {
-                for (Object argument : p.args) if ("system_locales".equals(argument)) {p.setResult("en-US");return;}
-            }
+        Hooker localeSetting = chain -> {
+            for (Object argument : chain.getArgs()) if ("system_locales".equals(argument)) return "en-US";
+            return chain.proceed();
         };
-        hook(android.provider.Settings.System.class, "getString", localeSetting);
-        hook(android.provider.Settings.System.class, "getStringForUser", localeSetting);
-        hook(XposedHelpers.findClassIfExists("android.os.SystemProperties", null), "get", new XC_MethodHook() {
-            @Override protected void beforeHookedMethod(MethodHookParam p) {
-                if (p.args.length > 0 && p.args[0] instanceof String) {
-                    String replacement = property((String) p.args[0]);
-                    if (replacement != null) p.setResult(replacement);
-                }
+        hookCount += hookNamed(android.provider.Settings.System.class, "getString", localeSetting);
+        hookCount += hookNamed(android.provider.Settings.System.class, "getStringForUser", localeSetting);
+        hookCount += hookNamed(findClass("android.os.SystemProperties", null), "get", chain -> {
+            if (!chain.getArgs().isEmpty() && chain.getArg(0) instanceof String) {
+                String replacement = property((String) chain.getArg(0));
+                if (replacement != null) return replacement;
             }
+            return chain.proceed();
         });
     }
 
     /** Chromium browsers (Chrome, Edge): page languages, WebRTC IP handling, geolocation and sensors. */
-    private static void browserSettings(String dataDir) {
+    private void browserSettings(String dataDir) {
         java.io.File file = new java.io.File(dataDir, BrowserPrefs.PROFILE);
         if (!file.isFile()) return; // WebView browsers, or a profile the browser has not created yet.
         try { log("browser settings checked, changed=" + BrowserPrefs.enforce(file)); }
@@ -218,30 +215,41 @@ public final class GuardHook implements IXposedHookLoadPackage, IXposedHookZygot
     private void browserHooks(ClassLoader loader) {
         // Chromium gets its initial ICU timezone and locale from Android. These hooks
         // also cover WebView hosts. The preference installer handles persisted languages.
-        constant(XposedHelpers.findClassIfExists("org.chromium.base.LocaleUtils", loader), "getDefaultLocaleString", "en-US");
-        constant(XposedHelpers.findClassIfExists("org.chromium.base.LocaleUtils", loader), "getDefaultLocaleListString", "en-US");
-        constant(XposedHelpers.findClassIfExists("org.chromium.base.TimezoneUtils", loader), "getDefaultTimeZoneId", profile.zone);
+        Class<?> localeUtils = findClass("org.chromium.base.LocaleUtils", loader);
+        constant(localeUtils, "getDefaultLocaleString", "en-US");
+        constant(localeUtils, "getDefaultLocaleListString", "en-US");
+        constant(findClass("org.chromium.base.TimezoneUtils", loader), "getDefaultTimeZoneId", profile.zone);
     }
 
     private void constant(Class<?> clazz, String name, Object value) {
-        hook(clazz, name, new XC_MethodHook() {
-            @Override protected void beforeHookedMethod(MethodHookParam p) {
-                // Do not return an incompatible type for vendor-specific overloads.
-                Class<?> type = ((Method) p.method).getReturnType();
-                if (value == null) { if (!type.isPrimitive()) p.setResult(null); }
-                else if (type.isInstance(value) || (type == int.class && value instanceof Integer) || (type == boolean.class && value instanceof Boolean)) p.setResult(value);
-            }
+        hookCount += hookNamed(clazz, name, chain -> {
+            // Do not return an incompatible type for vendor-specific overloads.
+            Class<?> type = ((Method) chain.getExecutable()).getReturnType();
+            if (value == null && !type.isPrimitive()) return null;
+            if (type.isInstance(value) || (type == int.class && value instanceof Integer)
+                    || (type == boolean.class && value instanceof Boolean)) return value;
+            return chain.proceed();
         });
     }
-    private void hook(Class<?> clazz, String name, XC_MethodHook callback) {
-        if (clazz == null) return;
+    private int hookNamed(Class<?> clazz, String name, Hooker hooker) {
+        return hookNamed(clazz, name, hooker, ExceptionMode.DEFAULT);
+    }
+    private int hookNamed(Class<?> clazz, String name, Hooker hooker, ExceptionMode mode) {
+        if (clazz == null) return 0;
+        int count = 0;
         try {
             for (Method method : clazz.getDeclaredMethods()) {
                 if (method.getName().equals(name) && !Modifier.isAbstract(method.getModifiers())) {
-                    XposedBridge.hookMethod(method, callback); hookCount++;
+                    hook(method).setExceptionMode(mode).intercept(hooker);
+                    count++;
                 }
             }
         } catch (Throwable error) { log("hook failed " + clazz.getName() + "." + name + ": " + error.getClass().getSimpleName()); }
+        return count;
     }
-    private static void log(String message) { XposedBridge.log("[RegionGuard] " + message); }
+    private static Class<?> findClass(String name, ClassLoader loader) {
+        try { return Class.forName(name, false, loader); }
+        catch (ClassNotFoundException | LinkageError ignored) { return null; }
+    }
+    private void log(String message) { log(Log.INFO, "RegionGuard", "[RegionGuard] " + message); }
 }

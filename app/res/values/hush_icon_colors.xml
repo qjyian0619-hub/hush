@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Hush 图标背景：夜靛 -->
+    <color name="hush_icon_background">#232742</color>
+</resources>

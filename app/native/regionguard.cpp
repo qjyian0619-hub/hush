@@ -10,7 +10,16 @@
 using HookFunction = int (*)(void*, void*, void**);
 using LibraryCallback = void (*)(const char*, void*);
 struct NativeAPIEntries { uint32_t version; HookFunction hook_func; int (*unhook_func)(void*); };
-static std::atomic<const char*> zone{"America/Los_Angeles"};
+struct PropertyProfile {
+    char timezone[PROP_VALUE_MAX];
+    char locale[PROP_VALUE_MAX];
+    char language[PROP_VALUE_MAX];
+    char country[PROP_VALUE_MAX];
+};
+static const PropertyProfile default_profile{"America/Los_Angeles", "en-US", "en", "US"};
+static PropertyProfile configured_profile;
+static std::atomic_flag configuring = ATOMIC_FLAG_INIT;
+static std::atomic<const PropertyProfile*> active_profile{&default_profile};
 static int status_bits = 0;
 static int (*original_get)(const char*, char*) = nullptr;
 static int (*original_read)(const prop_info*, char*, char*) = nullptr;
@@ -19,10 +28,11 @@ static void (*original_read_callback)(const prop_info*, PropertyCallback, void*)
 
 static const char* replacement(const char* key) {
     if (!key) return nullptr;
-    if (!strcmp(key,"persist.sys.timezone")) return zone.load();
-    if (!strcmp(key,"persist.sys.locale") || !strcmp(key,"ro.product.locale")) return "en-US";
-    if (!strcmp(key,"persist.sys.language") || !strcmp(key,"ro.product.locale.language")) return "en";
-    if (!strcmp(key,"persist.sys.country") || !strcmp(key,"ro.product.locale.region")) return "US";
+    const PropertyProfile* profile = active_profile.load(std::memory_order_acquire);
+    if (!strcmp(key,"persist.sys.timezone")) return profile->timezone;
+    if (!strcmp(key,"persist.sys.locale") || !strcmp(key,"ro.product.locale")) return profile->locale;
+    if (!strcmp(key,"persist.sys.language") || !strcmp(key,"ro.product.locale.language")) return profile->language;
+    if (!strcmp(key,"persist.sys.country") || !strcmp(key,"ro.product.locale.region")) return profile->country;
     if (!strncmp(key,"gsm.sim.operator.",17) || !strncmp(key,"gsm.operator.",13)
         || !strncmp(key,"vendor.gsm.sim.operator.",24) || !strncmp(key,"vendor.gsm.operator.",20)) return "";
     if (!strcmp(key,"gsm.sim.state")) return "ABSENT,ABSENT";
@@ -69,14 +79,39 @@ extern "C" __attribute__((visibility("default"),used)) LibraryCallback native_in
     }
     return nullptr;
 }
-extern "C" JNIEXPORT void JNICALL Java_dev_local_regionguard_NativeBridge_configure(JNIEnv* env,jclass,jstring timezone) {
-    const char* text = env->GetStringUTFChars(timezone,nullptr);
-    zone.store(strdup(text)); setenv("TZ",text,1); tzset(); env->ReleaseStringUTFChars(timezone,text);
+static bool copy_property(JNIEnv* env, jstring value, char (&output)[PROP_VALUE_MAX]) {
+    if (!value) return false;
+    jsize length = env->GetStringUTFLength(value);
+    if (length >= PROP_VALUE_MAX) return false;
+    env->GetStringUTFRegion(value, 0, env->GetStringLength(value), output);
+    output[length] = '\0';
+    return !env->ExceptionCheck();
+}
+
+extern "C" JNIEXPORT void JNICALL Java_dev_local_regionguard_NativeBridge_configure(
+        JNIEnv* env, jclass, jstring timezone, jstring locale, jstring language, jstring country) {
+    PropertyProfile values{};
+    if (!copy_property(env, timezone, values.timezone) || !copy_property(env, locale, values.locale)
+            || !copy_property(env, language, values.language) || !copy_property(env, country, values.country)) {
+        if (!env->ExceptionCheck()) {
+            jclass error = env->FindClass("java/lang/IllegalArgumentException");
+            if (error) env->ThrowNew(error, "Invalid locale or timezone property");
+        }
+        return;
+    }
+    // Each app process keeps the profile it loaded at startup.
+    if (configuring.test_and_set(std::memory_order_relaxed)) return;
+    configured_profile = values;
+    active_profile.store(&configured_profile, std::memory_order_release);
+    setenv("TZ", configured_profile.timezone, 1);
+    tzset();
 }
 extern "C" JNIEXPORT jstring JNICALL Java_dev_local_regionguard_NativeBridge_probe(JNIEnv* env,jclass) {
-    char country[PROP_VALUE_MAX]{}, timezone[PROP_VALUE_MAX]{}, buffer[512]{};
+    char country[PROP_VALUE_MAX]{}, timezone[PROP_VALUE_MAX]{}, locale[PROP_VALUE_MAX]{}, buffer[512]{};
     __system_property_get("gsm.sim.operator.iso-country",country);
     __system_property_get("persist.sys.timezone",timezone);
-    snprintf(buffer,sizeof(buffer),"{\"hookStatus\":%d,\"simCountry\":\"%s\",\"timezone\":\"%s\"}",status_bits,country,timezone);
+    __system_property_get("persist.sys.locale",locale);
+    snprintf(buffer, sizeof(buffer), "{\"hookStatus\":%d,\"simCountry\":\"%s\",\"timezone\":\"%s\",\"locale\":\"%s\"}",
+             status_bits, country, timezone, locale);
     return env->NewStringUTF(buffer);
 }

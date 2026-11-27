@@ -30,4 +30,4 @@ else
   ui_print "- Installer stages this module; activate using the supplied PC installer or your next manual reboot"
 fi
 ui_print "- Reboot after installing or updating the Zygisk component"
-ui_print "- No launcher icons. Open Quiet Meridian from KernelSU."
+ui_print "- No launcher icons. Open hush from KernelSU."

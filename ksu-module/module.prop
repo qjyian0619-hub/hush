@@ -1,6 +1,6 @@
 id=regionguard
-name=Quiet Meridian
-version=1.0
-versionCode=12
+name=hush
+version=1.1
+versionCode=13
 author=qiyian
 description=为 LSPosed 作用域内的应用设置语言与时区，限制应用读取 SIM、运营商及定位信息。通过 KernelSU WebUI 配置。

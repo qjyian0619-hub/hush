@@ -3,6 +3,7 @@ package dev.local.regionguard;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Locale;
 import org.json.JSONObject;
 
 /**
@@ -17,20 +18,20 @@ final class BrowserPrefs {
         {"profile", "default_content_setting_values", "geolocation"},
         {"profile", "default_content_setting_values", "sensors"}
     };
-    // English pages and Accept-Language; WebRTC may not send UDP outside a proxy, so it
-    // gathers no host or STUN candidates; pages cannot ask for location or motion sensors.
-    static final Object[] VALUES = {"en-US,en", "en-US,en", "disable_non_proxied_udp", 2, 2};
-
     private BrowserPrefs() {}
 
     /** Sets every key in parsed preferences. Returns the number of values changed. */
-    static int apply(JSONObject preferences) throws Exception {
+    static int apply(JSONObject preferences, Locale locale) throws Exception {
+        String tag = locale.toLanguageTag();
+        String base = locale.getLanguage();
+        String languages = tag.equals(base) ? tag : tag + "," + base;
+        Object[] values = {languages, languages, "disable_non_proxied_udp", 2, 2};
         int changed = 0;
         for (int i = 0; i < KEYS.length; i++) {
             JSONObject parent = parent(preferences, KEYS[i], true);
             String leaf = KEYS[i][KEYS[i].length - 1];
-            if (VALUES[i].equals(parent.opt(leaf))) continue;
-            parent.put(leaf, VALUES[i]);
+            if (values[i].equals(parent.opt(leaf))) continue;
+            parent.put(leaf, values[i]);
             changed++;
         }
         return changed;
@@ -42,9 +43,9 @@ final class BrowserPrefs {
      * owner and SELinux label; root callers must use apply() and write in place instead.
      * Returns the number of values changed; 0 leaves the file untouched.
      */
-    static int enforce(File file) throws Exception {
+    static int enforce(File file, Locale locale) throws Exception {
         JSONObject preferences = read(file);
-        int changed = apply(preferences);
+        int changed = apply(preferences, locale);
         if (changed > 0) {
             // Same-directory rename keeps the replacement atomic if the process dies mid-write.
             File temporary = new File(file.getParentFile(), file.getName() + ".regionguard-tmp");

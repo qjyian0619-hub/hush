@@ -6,7 +6,7 @@ root = Path(__file__).resolve().parent.parent
 dist = root / "dist"
 properties = (root / "ksu-module/module.prop").read_text(encoding="utf-8").splitlines()
 version = next(line.removeprefix("version=") for line in properties if line.startswith("version="))
-ksu_package = f"quiet-meridian-ksu-{version}.zip"
+ksu_package = f"hush-ksu-{version}.zip"
 source_files = []
 # Source archive: code and docs only. No phone backups, evidence or signing key.
 for folder in ("app", "ksu-module", "scripts", "tools"):

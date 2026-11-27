@@ -8,10 +8,15 @@ import android.content.SharedPreferences;
 public final class Profile {
     public static final String PACKAGE = "dev.local.regionguard";
     public static final String PREFS = "profile";
-    public static final String VERSION = "1.0";
+    public static final String VERSION = "1.1";
     public static final String DEFAULT_ZONE = "America/Los_Angeles";
-    public static final String[] ZONES = {DEFAULT_ZONE, "America/New_York", "Asia/Tokyo", "Europe/London", "UTC"};
-    public static final String[] ZONE_LABELS = {"加州 / 洛杉矶（自动夏令时）", "美国东部 / 纽约", "日本 / 东京", "英国 / 伦敦", "UTC"};
+    public static final String DEFAULT_LANGUAGE = "en-US";
+    public static final String[] ZONES = {
+        DEFAULT_ZONE, "America/New_York", "Asia/Tokyo", "Asia/Taipei", "Asia/Singapore", "Europe/London", "UTC"
+    };
+    public static final String[] ZONE_LABELS = {
+        "加州 / 洛杉矶（自动夏令时）", "美国东部 / 纽约", "日本 / 东京", "台北", "新加坡", "英国 / 伦敦", "UTC"
+    };
     public final String zone;
     public final String language;
     public final Locale locale;
@@ -25,7 +30,7 @@ public final class Profile {
         boolean valid = false;
         for (String item : TimeZone.getAvailableIDs()) if (item.equals(candidate)) {valid = true; break;}
         zone = valid ? candidate : DEFAULT_ZONE;
-        language = "en-US";
+        language = languageForZone(zone);
         locale = Locale.forLanguageTag(language);
         enabled = (Boolean) value(values, "enabled", true);
         browsers = (Boolean) value(values, "browsers", true);
@@ -34,6 +39,17 @@ public final class Profile {
         managerEnabled = managed && (Boolean) value(values, "ksu_enabled", false) && !boot.isEmpty()
             && boot.equals(value(values, "ksu_boot", ""));
     }
+
+    private static String languageForZone(String zone) {
+        switch (zone) {
+            case "Asia/Tokyo": return "ja-JP";
+            case "Asia/Taipei": return "zh-TW";
+            case "Asia/Singapore": return "en-SG";
+            case "Europe/London": return "en-GB";
+            default: return DEFAULT_LANGUAGE;
+        }
+    }
+
     private static Object value(Map<String, ?> values, String key, Object fallback) {
         Object value = values.get(key);
         return value == null ? fallback : value;

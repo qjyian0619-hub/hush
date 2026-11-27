@@ -5,7 +5,7 @@
   <uses-permission android:name="android.permission.READ_PHONE_STATE" />
   <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-  <application android:label="Quiet Meridian Probe" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false" android:debuggable="true">
+  <application android:label="hush Probe" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false" android:debuggable="true">
     <activity android:name="dev.local.regionguard.ProbeActivity" android:exported="true" />
   </application>
 </manifest>

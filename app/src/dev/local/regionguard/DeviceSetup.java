@@ -1,6 +1,7 @@
 package dev.local.regionguard;
 
 import java.io.File;
+import java.util.Locale;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -15,7 +16,10 @@ public final class DeviceSetup {
     };
     private static final String[][] KEYS = BrowserPrefs.KEYS;
     public static void main(String[] args) throws Exception {
-        if (args.length != 2 || !(args[0].equals("apply") || args[0].equals("restore"))) throw new IllegalArgumentException("apply|restore BACKUP_FILE");
+        boolean applying = args.length >= 2 && args.length <= 3 && "apply".equals(args[0]);
+        boolean restoring = args.length == 2 && "restore".equals(args[0]);
+        if (!applying && !restoring) throw new IllegalArgumentException("apply BACKUP_FILE [LANGUAGE] | restore BACKUP_FILE");
+        Locale locale = Locale.forLanguageTag(args.length == 3 ? args[2] : Profile.DEFAULT_LANGUAGE);
         File backupFile = new File(args[1]);
         JSONObject backup = backupFile.exists() ? BrowserPrefs.read(backupFile) : new JSONObject();
         for (String[] entry : PREF_FILES) {
@@ -23,7 +27,7 @@ public final class DeviceSetup {
             if (!file.exists()) {System.out.println(entry[0] + ": no existing preferences; skipped"); continue;}
             JSONObject preferences = BrowserPrefs.read(file);
             JSONArray records = backup.optJSONArray(entry[1]);
-            if (args[0].equals("apply")) {
+            if (applying) {
                 if (records == null) {
                     records = new JSONArray();
                     for (String[] key : KEYS) {
@@ -37,9 +41,9 @@ public final class DeviceSetup {
                     BrowserPrefs.write(backupFile, backup); // Commit rollback data before any change.
                 }
                 // In place, so the file keeps the browser's owner and SELinux label.
-                BrowserPrefs.apply(preferences);
+                BrowserPrefs.apply(preferences, locale);
                 BrowserPrefs.write(file, preferences);
-                System.out.println(entry[0] + ": English, geolocation/sensors blocked, WebRTC policy set");
+                System.out.println(entry[0] + ": " + locale.toLanguageTag() + ", geolocation/sensors blocked, WebRTC policy set");
             } else if (records != null) {
                 for (int i=0; i<KEYS.length; i++) {
                     JSONObject record = records.getJSONObject(i);

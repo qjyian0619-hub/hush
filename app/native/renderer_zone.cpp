@@ -26,7 +26,9 @@ namespace {
 
 constexpr const char* kTag = "RegionGuard";
 constexpr const char* kTargets[] = {"com.android.chrome_zygote", "com.microsoft.emmx_zygote"};
-constexpr const char* kZones[] = {"America/Los_Angeles", "America/New_York", "Asia/Tokyo", "Europe/London", "UTC"};
+constexpr const char* kZones[] = {
+    "America/Los_Angeles", "America/New_York", "Asia/Tokyo", "Asia/Taipei", "Asia/Singapore", "Europe/London", "UTC"
+};
 // Written by bridge.sh while protection, browser protection and the KSU module are all on:
 // "<zone> <ro.boottime.init>". A line from an earlier boot is ignored.
 constexpr const char* kConfig = "/data/adb/regionguard/renderer-zone";

@@ -36,8 +36,14 @@ if ($Restore) {
         else { $null = Adb @('shell','su','-c',"cmd locale set-app-locales $pkg --user 0") }
         Write-Output "$pkg restored"
     }
-    Write-Output 'Also turn off Quiet Meridian in LSPosed, then reopen target apps. This script does not reboot or launch them.'
+    Write-Output 'Also turn off hush in LSPosed, then reopen target apps. This script does not reboot or launch them.'
     exit
+}
+$language = 'en-US'
+$profileJson = Adb @('shell','su','-c','if [ -r /data/user/0/dev.local.regionguard/files/ksu-state.json ]; then cat /data/user/0/dev.local.regionguard/files/ksu-state.json; fi')
+if ($profileJson) {
+    $profile = $profileJson | ConvertFrom-Json
+    if ($profile.ok -and $profile.language -is [string] -and $profile.language -cmatch '\A[a-z]{2}(-[A-Z]{2})?\z') { $language = $profile.language }
 }
 $backup = if (Test-Path -LiteralPath $backupPath) {Get-Content -LiteralPath $backupPath -Raw | ConvertFrom-Json -AsHashtable} else {@{}}
 foreach ($pkg in $targets) {
@@ -55,12 +61,12 @@ foreach ($pkg in $targets) {
         $backup | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $backupPath -Encoding utf8
     }
     foreach ($op in $operations) {$null = Adb @('shell','su','-c',"cmd appops set --user 0 $pkg $op ignore")}
-    $null = Adb @('shell','su','-c',"cmd locale set-app-locales $pkg --user 0 --locales en-US")
-    Write-Output "$pkg : permissions restricted, per-app language English"
+    $null = Adb @('shell','su','-c',"cmd locale set-app-locales $pkg --user 0 --locales $language")
+    Write-Output "$pkg : permissions restricted, per-app language $language"
 }
 foreach ($browser in @('com.android.chrome','com.microsoft.emmx')) { $null = Adb @('shell','am','force-stop',$browser) }
 $null = Adb @('push',(Join-Path $project 'dist\regionguard.apk'),'/data/local/tmp/regionguard-tools.apk')
-Write-Output (Adb @('shell','su','-c','CLASSPATH=/data/local/tmp/regionguard-tools.apk app_process /system/bin dev.local.regionguard.DeviceSetup apply /data/local/tmp/regionguard-browser-backup.json'))
+Write-Output (Adb @('shell','su','-c',"CLASSPATH=/data/local/tmp/regionguard-tools.apk app_process /system/bin dev.local.regionguard.DeviceSetup apply /data/local/tmp/regionguard-browser-backup.json $language"))
 $null = Adb @('shell','su','-c','chmod 600 /data/local/tmp/regionguard-browser-backup.json')
 $null = Adb @('shell','su','-c','cp /data/local/tmp/regionguard-browser-backup.json /data/local/tmp/regionguard-browser-export.json')
 $null = Adb @('shell','su','-c','chmod 644 /data/local/tmp/regionguard-browser-export.json')

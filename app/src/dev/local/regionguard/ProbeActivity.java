@@ -58,7 +58,8 @@ public final class ProbeActivity extends Activity {
         WifiManager wifi = (WifiManager)getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         put("ssid", () -> wifi.getConnectionInfo().getSSID()); put("bssid", () -> wifi.getConnectionInfo().getBSSID());
         put("wifiScans", () -> wifi.getScanResults().size());
-        for (String key : new String[]{"gsm.sim.operator.iso-country", "gsm.sim.operator.numeric", "gsm.operator.iso-country", "persist.sys.timezone", "persist.sys.locale", "ro.oplus.regionmark"}) {
+        for (String key : new String[]{"gsm.sim.operator.iso-country", "gsm.sim.operator.numeric", "gsm.operator.iso-country",
+                "persist.sys.timezone", "persist.sys.locale", "persist.sys.language", "persist.sys.country", "ro.oplus.regionmark"}) {
             put(key, () -> Class.forName("android.os.SystemProperties").getMethod("get", String.class).invoke(null, key));
         }
         web.getSettings().setJavaScriptEnabled(true); WebView.setWebContentsDebuggingEnabled(true);

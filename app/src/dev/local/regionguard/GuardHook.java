@@ -59,7 +59,7 @@ public final class GuardHook extends XposedModule {
         try {
             try { System.loadLibrary("regionguard"); }
             catch (UnsatisfiedLinkError first) { System.load(getModuleApplicationInfo().sourceDir + "!/lib/arm64-v8a/libregionguard.so"); }
-            NativeBridge.configure(profile.zone);
+            NativeBridge.configure(profile.zone, profile.language, profile.locale.getLanguage(), profile.locale.getCountry());
             System.setProperty("regionguard.native", NativeBridge.probe());
         } catch (Throwable error) { log("native unavailable: " + error); }
         localeHooks();
@@ -92,8 +92,8 @@ public final class GuardHook extends XposedModule {
         Locale.setDefault(profile.locale);
         LocaleList.setDefault(new LocaleList(profile.locale));
         System.setProperty("user.timezone", profile.zone);
-        System.setProperty("user.language", "en");
-        System.setProperty("user.country", "US");
+        System.setProperty("user.language", profile.locale.getLanguage());
+        System.setProperty("user.country", profile.locale.getCountry());
         try { Os.setenv("TZ", profile.zone, true); } catch (Throwable ignored) {}
         for (String name : new String[]{"getDefault", "getDefaultRef"}) {
             hookCount += hookNamed(TimeZone.class, name, chain -> timezone.clone());
@@ -178,9 +178,9 @@ public final class GuardHook extends XposedModule {
 
     private String property(String key) {
         if (key.equals("persist.sys.timezone")) return profile.zone;
-        if (key.equals("persist.sys.locale") || key.equals("ro.product.locale")) return "en-US";
-        if (key.equals("persist.sys.language") || key.equals("ro.product.locale.language")) return "en";
-        if (key.equals("persist.sys.country") || key.equals("ro.product.locale.region")) return "US";
+        if (key.equals("persist.sys.locale") || key.equals("ro.product.locale")) return profile.language;
+        if (key.equals("persist.sys.language") || key.equals("ro.product.locale.language")) return profile.locale.getLanguage();
+        if (key.equals("persist.sys.country") || key.equals("ro.product.locale.region")) return profile.locale.getCountry();
         if (key.startsWith("gsm.sim.operator.") || key.startsWith("gsm.operator.") || key.startsWith("vendor.gsm.sim.operator.") || key.startsWith("vendor.gsm.operator.")) return "";
         if (key.equals("gsm.sim.state")) return "ABSENT,ABSENT";
         if (key.equals("ro.oplus.regionmark") || key.equals("ro.vendor.oplus.regionmark") || key.equals("persist.sys.oplus.region")
@@ -190,7 +190,7 @@ public final class GuardHook extends XposedModule {
 
     private void propertyHooks() {
         Hooker localeSetting = chain -> {
-            for (Object argument : chain.getArgs()) if ("system_locales".equals(argument)) return "en-US";
+            for (Object argument : chain.getArgs()) if ("system_locales".equals(argument)) return profile.language;
             return chain.proceed();
         };
         hookCount += hookNamed(android.provider.Settings.System.class, "getString", localeSetting);
@@ -208,7 +208,7 @@ public final class GuardHook extends XposedModule {
     private void browserSettings(String dataDir) {
         java.io.File file = new java.io.File(dataDir, BrowserPrefs.PROFILE);
         if (!file.isFile()) return; // WebView browsers, or a profile the browser has not created yet.
-        try { log("browser settings checked, changed=" + BrowserPrefs.enforce(file)); }
+        try { log("browser settings checked, changed=" + BrowserPrefs.enforce(file, profile.locale)); }
         catch (Throwable error) { log("browser settings unavailable: " + error); }
     }
 
@@ -216,8 +216,8 @@ public final class GuardHook extends XposedModule {
         // Chromium gets its initial ICU timezone and locale from Android. These hooks
         // also cover WebView hosts. The preference installer handles persisted languages.
         Class<?> localeUtils = findClass("org.chromium.base.LocaleUtils", loader);
-        constant(localeUtils, "getDefaultLocaleString", "en-US");
-        constant(localeUtils, "getDefaultLocaleListString", "en-US");
+        constant(localeUtils, "getDefaultLocaleString", profile.language);
+        constant(localeUtils, "getDefaultLocaleListString", profile.language);
         constant(findClass("org.chromium.base.TimezoneUtils", loader), "getDefaultTimeZoneId", profile.zone);
     }
 

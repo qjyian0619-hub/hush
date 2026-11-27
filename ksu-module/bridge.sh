@@ -8,7 +8,13 @@ if [ "$1" != --locked ]; then
 fi
 shift
 state_file=/data/user/0/dev.local.regionguard/files/ksu-state.json
-error() { echo '{"ok":false,"error":"Backend communication failed. Check that LSPosed and Quiet Meridian are enabled."}'; exit 1; }
+error() { echo '{"ok":false,"error":"Backend communication failed. Check that LSPosed and hush are enabled."}'; exit 1; }
+valid_zone() {
+  case "$1" in
+    America/Los_Angeles|America/New_York|Asia/Tokyo|Asia/Taipei|Asia/Singapore|Europe/London|UTC) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 call_backend() {
   if result=$(/system/bin/content call --user 0 --uri content://dev.local.regionguard.control "$@" 2>&1); then
     case "$result" in *'ok=true'*) return 0 ;; esac
@@ -37,7 +43,7 @@ publish() {
   for key in enabled browsers managerEnabled; do
     case "$state" in *"\"$key\":true"*) ;; *) active=false ;; esac
   done
-  case "$zone" in America/Los_Angeles|America/New_York|Asia/Tokyo|Europe/London|UTC) ;; *) active=false ;; esac
+  valid_zone "$zone" || active=false
   case "$boot" in ''|*[!0-9]*) active=false ;; esac
   previous=$(cat "$STATE/renderer-zone" 2>/dev/null)
   if [ "$active" = true ]; then
@@ -60,7 +66,7 @@ case "${1:-status}" in
     publish
     ;;
   save)
-    case "$2" in America/Los_Angeles|America/New_York|Asia/Tokyo|Europe/London|UTC) ;; *) error ;; esac
+    valid_zone "$2" || error
     case "$3:$4" in true:true|true:false|false:true|false:false) ;; *) error ;; esac
     call_backend --method save --extra "zone:s:$2" --extra "enabled:b:$3" --extra "browsers:b:$4"
     publish

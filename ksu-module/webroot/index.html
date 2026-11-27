@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
-  <title>Quiet Meridian</title>
-  <link rel="stylesheet" href="style.css?v=1.8">
-  <script type="module" src="app.js?v=1.8"></script>
+  <title>hush</title>
+  <link rel="stylesheet" href="style.css?v=1.0">
+  <script type="module" src="app.js?v=1.1"></script>
 </head>
 <body>
   <svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -30,18 +30,11 @@
     <symbol id="icon-selector" viewBox="0 0 24 24">
       <path d="m8 9.5 4-4 4 4M8 14.5l4 4 4-4"/>
     </symbol>
-    <symbol id="icon-chevron" viewBox="0 0 24 24">
-      <path d="m6.5 9.5 5.5 5.5 5.5-5.5"/>
-    </symbol>
     <symbol id="icon-check" viewBox="0 0 24 24">
       <path d="m5 12.5 4.5 4.5L19 7.5"/>
     </symbol>
     <symbol id="icon-close" viewBox="0 0 24 24">
       <path d="m7 7 10 10M7 17 17 7"/>
-    </symbol>
-    <symbol id="icon-info" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="8.5"/>
-      <path d="M12 11.2V16m0-7.8h.01"/>
     </symbol>
   </svg>
 
@@ -50,7 +43,7 @@
       <span class="brand" aria-hidden="true">
         <svg class="icon"><use href="#icon-shield"/></svg>
       </span>
-      <h1>Quiet Meridian</h1>
+      <h1>hush</h1>
       <button id="refresh" class="icon-button glass" type="button" aria-label="刷新状态" title="刷新状态">
         <svg class="icon" aria-hidden="true"><use href="#icon-refresh"/></svg>
       </button>
@@ -118,12 +111,14 @@
               <span class="tile" aria-hidden="true">
                 <svg class="icon"><use href="#icon-clock"/></svg>
               </span>
-              <label id="zone-label" for="zone" class="row-title">时区</label>
+              <label id="zone-label" for="zone" class="row-title">时区与语言</label>
               <div class="picker">
                 <select id="zone" disabled>
                   <option value="America/Los_Angeles">加州 · 洛杉矶</option>
                   <option value="America/New_York">美国东部 · 纽约</option>
                   <option value="Asia/Tokyo">日本 · 东京</option>
+                  <option value="Asia/Taipei">台北</option>
+                  <option value="Asia/Singapore">新加坡</option>
                   <option value="Europe/London">英国 · 伦敦</option>
                   <option value="UTC">UTC</option>
                 </select>
@@ -139,21 +134,6 @@
           <p id="feedback" class="section-footer" role="status"></p>
         </form>
       </section>
-
-      <details class="list disclosure">
-        <summary class="row">
-          <span class="tile" aria-hidden="true">
-            <svg class="icon"><use href="#icon-info"/></svg>
-          </span>
-          <span class="row-title">使用说明</span>
-          <svg class="icon disclosure-chevron" aria-hidden="true"><use href="#icon-chevron"/></svg>
-        </summary>
-        <div class="disclosure-body">
-          <p>保存后，强行停止并重新打开目标应用才会生效。应用保护依赖已启用的 LSPosed，时区按当地规则自动处理夏令时。</p>
-          <p>浏览器保护作用于 LSPosed 勾选的浏览器及其打开的所有网站。Chrome 和 Edge 每次启动时重设网页语言与定位权限，并禁止 WebRTC 绕过代理发送 UDP。</p>
-          <p>首次安装或更新浏览器保护的 Zygisk 部分后需要重启。Via 使用 WebView，支持的保护项目以浏览器实测为准。</p>
-        </div>
-      </details>
     </div>
   </main>
 

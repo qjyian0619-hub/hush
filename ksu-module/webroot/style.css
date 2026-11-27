@@ -1,5 +1,5 @@
 /*
- * Quiet Meridian WebUI
+ * hush WebUI
  * Palette: Geist-style neutral scale with one blue accent and status colors.
  * Layout: SwiftUI-style large title and inset grouped lists.
  * Material: Liquid Glass only on floating controls (refresh button, time zone sheet).
@@ -568,34 +568,6 @@ label.row:has(input:enabled) { cursor: pointer; }
 .section-footer[data-kind="success"] { color: var(--green-text); }
 .section-footer[data-kind="error"] { color: var(--red-text); }
 
-/* Disclosure (help) */
-
-.disclosure summary {
-  cursor: pointer;
-  list-style: none;
-}
-
-.disclosure summary::-webkit-details-marker { display: none; }
-.disclosure summary:focus-visible { outline-offset: -3px; border-radius: var(--radius-card); }
-
-.disclosure-chevron {
-  width: 16px;
-  height: 16px;
-  color: var(--text-3);
-}
-
-.disclosure[open] .disclosure-chevron { transform: rotate(180deg); }
-
-.disclosure-body {
-  padding: 0 16px 14px 58px;
-  color: var(--text-2);
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.disclosure-body p { margin: 0 0 8px; }
-.disclosure-body p:last-child { margin-bottom: 0; }
-
 /* Time zone sheet */
 
 .sheet-dialog:not([open]) { display: none; }
@@ -699,13 +671,11 @@ label.row:has(input:enabled) { cursor: pointer; }
 
 label.row:has(input:enabled):active,
 .zone-row:has(#zone-trigger:enabled:active),
-.disclosure summary:active,
 .zone-option:active { background: var(--fill); }
 
 @media (hover: hover) {
   label.row:has(input:enabled):hover,
   .zone-row:has(#zone-trigger:enabled:hover),
-  .disclosure summary:hover,
   .zone-option:hover { background: var(--bg-subtle); }
   .button.primary:enabled:hover { opacity: .88; }
   .close-button:hover { color: var(--text); }
@@ -717,7 +687,6 @@ label.row:has(input:enabled):active,
   .icon-button, .button, .close-button { transition: transform .22s cubic-bezier(.3, .7, .4, 1.4), opacity .15s ease; }
   .icon-button:enabled:active { transform: scale(1.08); }
   :is(.button, .close-button):enabled:active { transform: scale(.98); }
-  .disclosure-chevron { transition: transform .2s ease; }
   /* Pulse only while loading: an endless animation keeps the WebView redrawing every frame. */
   .status[data-state="loading"] .status-dot::after { animation: pulse 1.6s ease-out infinite; }
   /* Transform only, and no forwards fill: an opacity animation would make the dialog a backdrop root
@@ -774,7 +743,6 @@ label.row:has(input:enabled):active,
   .page { padding-left: 12px; padding-right: 12px; }
   .row { gap: 10px; padding: 8px 12px; }
   .row + .row::before { left: 52px; }
-  .disclosure-body { padding-left: 52px; }
   .status-head { padding: 16px; }
   .meta { padding: 14px 16px 16px; gap: 12px; }
 }
@@ -789,7 +757,6 @@ label.row:has(input:enabled):active,
     gap: 22px 24px;
     align-items: start;
   }
-  .disclosure { grid-column: 1 / -1; }
   /* Line the status card up with the settings list, which sits under a section header. */
   .status { margin-top: calc(13px * 1.5 + 8px); }
   .sheet-dialog { margin: auto; }

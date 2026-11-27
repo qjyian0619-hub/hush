@@ -3,7 +3,13 @@ import {attachLens} from './glass.js';
 
 const BRIDGE = '/system/bin/sh /data/adb/modules/regionguard/bridge.sh';
 const SAVE_LABEL = '保存配置';
-const LANGUAGES = new Map([['en-US', '英语（美国）']]);
+const LANGUAGES = new Map([
+  ['en-US', '英语（美国）'],
+  ['en-GB', '英语（英国）'],
+  ['en-SG', '英语（新加坡）'],
+  ['ja-JP', '日语'],
+  ['zh-TW', '繁体中文']
+]);
 
 const form = document.getElementById('settings');
 const hero = document.getElementById('hero');
@@ -101,7 +107,7 @@ function setStatus(state, title, detail = '') {
 
 function renderState(state) {
   if (!zones.has(state.zone)) {
-    throw new Error('当前时区不在可选列表内，请更新 Quiet Meridian 模块');
+    throw new Error('当前时区不在可选列表内，请更新 hush 模块');
   }
 
   enabled.checked = state.enabled;
@@ -117,7 +123,7 @@ function renderState(state) {
     setStatus('pending', '等待生效', 'KernelSU 模块状态尚未同步');
   }
 
-  const language = state.language || 'en-US';
+  const language = state.language || '—';
   meta.language.textContent = LANGUAGES.get(language) || language;
   meta.zone.textContent = zones.get(state.zone);
   meta.browsers.textContent = state.browsers ? '开启' : '关闭';

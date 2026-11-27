@@ -39,7 +39,7 @@ module = after["regionguard"]
 assert on(module["enabled"]) and on(module["web"]) and on(module["action"]) and not on(module["update"])
 metadata = (root / "ksu-module/module.prop").read_text(encoding="utf-8").splitlines()
 version = next(line.removeprefix("version=") for line in metadata if line.startswith("version="))
-with ZipFile(root / "dist" / f"quiet-meridian-ksu-{version}.zip") as package:
+with ZipFile(root / "dist" / f"hush-ksu-{version}.zip") as package:
     assert package.testzip() is None
     assert package.read("backend.apk") == (root/"dist/regionguard.apk").read_bytes()
     assert package.read("zygisk/arm64-v8a.so") == (root/"dist/regionguard-zygisk-arm64-v8a.so").read_bytes()

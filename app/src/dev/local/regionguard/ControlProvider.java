@@ -24,7 +24,7 @@ public final class ControlProvider extends ContentProvider {
             ControlReceiver.execute(getContext(),intent);
             Bundle result = new Bundle(); result.putBoolean("ok",true); return result;
         } catch (Exception error) {
-            throw new IllegalStateException("Quiet Meridian control failed: " + error.getMessage(), error);
+            throw new IllegalStateException("hush control failed: " + error.getMessage(), error);
         } finally {
             Binder.restoreCallingIdentity(identity);
             ProfileService.callFinished();

@@ -4,7 +4,7 @@ hush 是一个 KernelSU + LSPosed 模块。它让**你勾选的应用**以为自
 
 当前版本 1.1，安装包为 `dist/hush-ksu-1.1.zip`。
 
-> hush 只改变应用在本机读到的内容，不改变你的出口 IP，也不能保证账号安全。网络出口由你自己的 VPN 负责。
+> hush 只改变应用在本机读到的内容，不改变你的出口 IP，也不能保证账号安全。
 
 ## 效果
 
@@ -67,8 +67,6 @@ KernelSU WebUI ──► bridge.sh ──► 后台应用（ContentProvider）�
 ```
 
 **配置。** WebUI 只加载本地文件，通过 `bridge.sh` 调用后台应用的 ContentProvider。后台再通过 libxposed service 把配置写进 LSPosed 的远程偏好，被注入的应用从那里读取。`watch.sh` 每 2 秒检查一次 KernelSU 中的模块开关，变化时同步到后台。
-
-**宁可不生效，不用旧配置。** 模块开关绑定在本次开机的标记上，标记取自 `ro.runtime.firstboot`，读不到时用内核的 `boot_id`。应用读到的标记与后台记录的不一致，或者根本读不到配置时，hush 在这个应用里不生效，并在 LSPosed 日志中记一条 `inactive package=…`。
 
 **应用进程。** `GuardHook` 由 LSPosed 注入勾选的应用。它设置默认时区和语言，并拦截电话、订阅、定位、Wi-Fi、`Settings` 和 `SystemProperties` 的相关接口。原生库 `libregionguard.so` 通过 LSPosed 原生钩子接管 libc 的 `__system_property_get` / `read` / `read_callback`，使原生代码读到的时区、语言、SIM 和地区属性也一致。系统 UI、设置和 UID 小于 10000 的进程一律不注入。
 

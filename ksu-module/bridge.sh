@@ -78,9 +78,5 @@ case "${1:-status}" in
     call_backend --method module-state --extra "boot:s:$boot" --extra "enabled:b:$2"
     publish
     ;;
-  native-ui)
-    /system/bin/am start --user 0 -n dev.local.regionguard/.MainActivity >/dev/null 2>&1 || error
-    echo '{"ok":true}'
-    ;;
   *) error ;;
 esac

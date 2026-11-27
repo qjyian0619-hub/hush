@@ -2,7 +2,7 @@
 
 hush 是一个 KernelSU + LSPosed 模块。它让**你勾选的应用**以为自己在另一个时区，界面语言也随之切换，同时读不到 SIM、运营商、定位和 Wi-Fi 信息。手机本身的语言、时区、通话和网络都不受影响。
 
-当前版本 1.1，[下载 hush-ksu-1.1.zip][install-package]。
+当前版本 1.1.1，[下载 hush-ksu-1.1.1.zip][install-package]。
 
 > hush 只改变应用在本机读到的内容，不改变你的出口 IP，也不能保证账号安全。
 
@@ -40,7 +40,7 @@ hush 是一个 KernelSU + LSPosed 模块。它让**你勾选的应用**以为自
 
 **需要：** arm64、Android 9 或更新版本、KernelSU，以及支持 libxposed API 102 的 Zygisk 版 LSPosed。想让 Chrome 和 Edge 冷启动后的第一个网页也使用所选时区，还需要已启用的 Zygisk 加载器（Zygisk Next、ReZygisk 或 NeoZygisk）。
 
-1. 下载 [hush-ksu-1.1.zip][install-package] 并复制到手机，在 **KernelSU → 模块** 中安装，然后手动重启。安装器会同时以机主用户（user 0）身份装好后台应用 `dev.local.regionguard`，它没有桌面图标。
+1. 下载 [hush-ksu-1.1.1.zip][install-package] 并复制到手机，在 **KernelSU → 模块** 中安装，然后手动重启。安装器会同时以机主用户（user 0）身份装好后台应用 `dev.local.regionguard`，它没有桌面图标。
 2. 在 **LSPosed → 模块** 中启用 **hush**，勾选要保护的应用。要保护网页，也勾选 Chrome 或 Edge。
 3. 打开 **KernelSU → 模块 → hush → WebUI**（或点「执行」），选择时区，打开「应用保护」，按需打开「浏览器保护」，然后保存。
 4. 强行停止并重新打开勾选的应用和浏览器。
@@ -94,4 +94,4 @@ KernelSU WebUI ──► bridge.sh ──► 后台应用（ContentProvider）�
 
 `dist/regionguard-recovery.zip` 打包了还原脚本、工具 APK 和这台手机的备份，可以单独保存。
 
-[install-package]: https://github.com/qjyian0619-hub/hush/releases/download/v1.1/hush-ksu-1.1.zip
+[install-package]: https://github.com/qjyian0619-hub/hush/releases/download/v1.1.1/hush-ksu-1.1.1.zip

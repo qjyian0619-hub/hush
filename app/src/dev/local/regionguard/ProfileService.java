@@ -8,11 +8,10 @@ import android.util.Log;
 import io.github.libxposed.service.XposedService;
 import io.github.libxposed.service.XposedServiceHelper;
 
-/** Receives the framework binder for the module app's control and settings entry points. */
+/** Receives the framework binder for module configuration requests. */
 final class ProfileService implements XposedServiceHelper.OnServiceListener {
     private static final long BIND_TIMEOUT_MS = 5_000;
     private static final long REPLY_GRACE_MS = 100;
-    private static final long NOTICE_GRACE_MS = 250;
     private static final ProfileService CONNECTION = new ProfileService();
 
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -20,8 +19,6 @@ final class ProfileService implements XposedServiceHelper.OnServiceListener {
     private XposedService service;
     private IllegalStateException failure;
     private int pendingCalls;
-    private Runnable visibleNotice;
-    private boolean noticeShown;
 
     private ProfileService() {
         XposedServiceHelper.registerListener(this);
@@ -45,7 +42,6 @@ final class ProfileService implements XposedServiceHelper.OnServiceListener {
     @Override public synchronized void onServiceBind(XposedService connected) {
         service = connected;
         failure = null;
-        noticeShown = false;
         main.removeCallbacks(recycle);
         notifyAll();
     }
@@ -86,13 +82,6 @@ final class ProfileService implements XposedServiceHelper.OnServiceListener {
         }
     }
 
-    static void setVisibleNotice(Runnable notice, boolean visible) {
-        synchronized (CONNECTION) {
-            if (visible) CONNECTION.visibleNotice = notice;
-            else if (CONNECTION.visibleNotice == notice) CONNECTION.visibleNotice = null;
-        }
-    }
-
     // libxposed only pushes a binder. Retire this process after replies have had time to leave it.
     private void scheduleRecycle() {
         if (failure == null || pendingCalls != 0) return;
@@ -100,22 +89,9 @@ final class ProfileService implements XposedServiceHelper.OnServiceListener {
         main.postDelayed(recycle, REPLY_GRACE_MS);
     }
 
-    private void recycleIfIdle() {
-        Runnable notice;
-        synchronized (this) {
-            if (failure == null || pendingCalls != 0) return;
-            notice = noticeShown ? null : visibleNotice;
-            if (notice == null) {
-                Log.w("RegionGuard", "[RegionGuard] " + failure.getMessage());
-                Process.killProcess(Process.myPid());
-                return;
-            }
-            noticeShown = true;
-        }
-        try {
-            notice.run();
-        } finally {
-            main.postDelayed(recycle, NOTICE_GRACE_MS);
-        }
+    private synchronized void recycleIfIdle() {
+        if (failure == null || pendingCalls != 0) return;
+        Log.w("RegionGuard", "[RegionGuard] " + failure.getMessage());
+        Process.killProcess(Process.myPid());
     }
 }

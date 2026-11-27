@@ -36,7 +36,7 @@ if ($Restore) {
         else { $null = Adb @('shell','su','-c',"cmd locale set-app-locales $pkg --user 0") }
         Write-Output "$pkg restored"
     }
-    Write-Output 'Also turn off Region Guard in LSPosed, then reopen target apps. This script does not reboot or launch them.'
+    Write-Output 'Also turn off Quiet Meridian in LSPosed, then reopen target apps. This script does not reboot or launch them.'
     exit
 }
 $backup = if (Test-Path -LiteralPath $backupPath) {Get-Content -LiteralPath $backupPath -Raw | ConvertFrom-Json -AsHashtable} else {@{}}

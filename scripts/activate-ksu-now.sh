@@ -3,7 +3,7 @@
 STAGE=/data/adb/modules_update/regionguard
 LIVE=/data/adb/modules/regionguard
 STATE=/data/adb/regionguard
-fail() { echo "Region Guard activation failed: $1" >&2; exit 1; }
+fail() { echo "Quiet Meridian activation failed: $1" >&2; exit 1; }
 mkdir -p "$STATE" || fail "cannot create module state directory"
 chmod 0700 "$STATE"
 if [ -d "$STAGE" ]; then
@@ -25,5 +25,5 @@ fi
 [ -d "$LIVE" ] && grep -q '^id=regionguard$' "$LIVE/module.prop" || fail "module not found"
 sh "$LIVE/service.sh" || fail "cannot start state synchronization"
 sh "$LIVE/bridge.sh" module-state true || fail "cannot initialize backend"
-echo "Region Guard UI and state synchronization activated; no phone reboot performed."
+echo "Quiet Meridian UI and state synchronization activated; no phone reboot performed."
 echo "The Zygisk part (Chrome/Edge first-page time zone) loads with Zygisk Next at the next reboot."

@@ -26,7 +26,7 @@ public final class MainActivity extends Activity {
         ScrollView scroll = new ScrollView(this); scroll.addView(layout); setContentView(scroll);
         scroll.setOnApplyWindowInsetsListener((view,insets)->{view.setPadding(0,insets.getSystemWindowInsetTop(),0,insets.getSystemWindowInsetBottom());return insets;});
         getWindow().getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-        title(layout, "地区隐私");
+        title(layout, "Quiet Meridian");
         text(layout, "KernelSU 统一入口 · " + Profile.VERSION + "\nSIM / 运营商 / 定位 / Wi-Fi 扫描 / 语言 / 时区");
         TextView status = text(layout, "正在连接 LSPosed 配置服务…");
         Switch enabled = new Switch(this); enabled.setText("启用保护"); enabled.setEnabled(false); layout.addView(enabled);
@@ -83,7 +83,7 @@ public final class MainActivity extends Activity {
             status.setText(message);
             Toast.makeText(this, message, Toast.LENGTH_LONG).show();
         };
-        text(layout, "在 KSU → 模块 → 地区隐私可打开 WebUI。\n\n浏览器保护作用于 LSPosed 勾选的浏览器。Chrome 和 Edge 每次启动时重设网页语言与定位权限，并禁止 WebRTC 绕过代理发送 UDP。Chrome 和 Edge 冷启动后第一个网页的时区由 Zygisk 部分修正，首次安装该部分后重启一次生效。\n\n保存后，强行停止并重新打开目标应用。访问网站时由 VPN 接管流量。");
+        text(layout, "在 KSU → 模块 → Quiet Meridian 可打开 WebUI。\n\n浏览器保护作用于 LSPosed 勾选的浏览器。Chrome 和 Edge 每次启动时重设网页语言与定位权限，并限制 WebRTC 绕过代理发送 UDP。首次安装浏览器保护的 Zygisk 部分后需要重启。\n\n保存后，强行停止并重新打开目标应用。网页的网络出口由当前网络或 VPN 决定。");
     }
 
     @Override protected void onStart() {

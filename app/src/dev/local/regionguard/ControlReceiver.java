@@ -85,7 +85,8 @@ public final class ControlReceiver extends BroadcastReceiver {
 
         Profile profile = new Profile(prefs);
         ProfileService.confirmConnected(service);
-        JSONObject state = new JSONObject().put("ok", true).put("version", Profile.VERSION).put("enabled", profile.enabled)
+        JSONObject state = new JSONObject().put("ok", true).put("version", Profile.VERSION).put("schemaVersion", 1)
+            .put("enabled", profile.enabled)
             .put("browsers", profile.browsers).put("zone", profile.zone).put("language", profile.language)
             .put("managerEnabled", profile.managerEnabled).put("sharedPreferences", true).put("managed", profile.managed)
             .put("bootSource", marker.isEmpty() ? "none" : marker.substring(0, marker.indexOf(':')));
@@ -106,10 +107,11 @@ public final class ControlReceiver extends BroadcastReceiver {
     private static void seedSettings(SharedPreferences.Editor edit, File stateFile) {
         edit.putString("zone", Profile.DEFAULT_ZONE).putBoolean("enabled", true).putBoolean("browsers", true);
         if (!stateFile.isFile()) return;
-        // Only releases through 1.8 used local preferences. The boot marker always comes from module-state.
+        // Legacy local snapshots predate schemaVersion. The display version restarted at 1.0.
         try {
             JSONObject previous = new JSONObject(new String(Files.readAllBytes(stateFile.toPath()), StandardCharsets.UTF_8));
-            if (!previous.optString("version").matches("1\\.[0-8]") || !previous.optBoolean("ok")) return;
+            if (previous.has("schemaVersion") || !previous.optString("version").matches("1\\.[0-8]")
+                    || !previous.optBoolean("ok")) return;
             String zone = previous.optString("zone");
             if (Arrays.asList(Profile.ZONES).contains(zone)) edit.putString("zone", zone);
             edit.putBoolean("enabled", previous.optBoolean("enabled", true))

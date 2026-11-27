@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
-  <title>地区隐私</title>
+  <title>Quiet Meridian</title>
   <link rel="stylesheet" href="style.css?v=1.8">
   <script type="module" src="app.js?v=1.8"></script>
 </head>
@@ -50,7 +50,7 @@
       <span class="brand" aria-hidden="true">
         <svg class="icon"><use href="#icon-shield"/></svg>
       </span>
-      <h1>地区隐私</h1>
+      <h1>Quiet Meridian</h1>
       <button id="refresh" class="icon-button glass" type="button" aria-label="刷新状态" title="刷新状态">
         <svg class="icon" aria-hidden="true"><use href="#icon-refresh"/></svg>
       </button>
@@ -151,7 +151,7 @@
         <div class="disclosure-body">
           <p>保存后，强行停止并重新打开目标应用才会生效。应用保护依赖已启用的 LSPosed，时区按当地规则自动处理夏令时。</p>
           <p>浏览器保护作用于 LSPosed 勾选的浏览器及其打开的所有网站。Chrome 和 Edge 每次启动时重设网页语言与定位权限，并禁止 WebRTC 绕过代理发送 UDP。</p>
-          <p>Chrome 和 Edge 冷启动后第一个网页的时区由 Zygisk 部分修正，安装后重启一次生效。Via 冷启动后的第一个网页仍可能读到系统时区，也无法限制 WebRTC，靠 VPN 保持同一出口。</p>
+          <p>首次安装或更新浏览器保护的 Zygisk 部分后需要重启。Via 使用 WebView，支持的保护项目以浏览器实测为准。</p>
         </div>
       </details>
     </div>

@@ -8,7 +8,7 @@ if [ "$1" != --locked ]; then
 fi
 shift
 state_file=/data/user/0/dev.local.regionguard/files/ksu-state.json
-error() { echo '{"ok":false,"error":"Backend communication failed. Check that LSPosed and Region Guard are enabled."}'; exit 1; }
+error() { echo '{"ok":false,"error":"Backend communication failed. Check that LSPosed and Quiet Meridian are enabled."}'; exit 1; }
 call_backend() {
   if result=$(/system/bin/content call --user 0 --uri content://dev.local.regionguard.control "$@" 2>&1); then
     case "$result" in *'ok=true'*) return 0 ;; esac

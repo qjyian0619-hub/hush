@@ -8,7 +8,7 @@ import android.content.SharedPreferences;
 public final class Profile {
     public static final String PACKAGE = "dev.local.regionguard";
     public static final String PREFS = "profile";
-    public static final String VERSION = "1.9.1";
+    public static final String VERSION = "1.0";
     public static final String DEFAULT_ZONE = "America/Los_Angeles";
     public static final String[] ZONES = {DEFAULT_ZONE, "America/New_York", "Asia/Tokyo", "Europe/London", "UTC"};
     public static final String[] ZONE_LABELS = {"加州 / 洛杉矶（自动夏令时）", "美国东部 / 纽约", "日本 / 东京", "英国 / 伦敦", "UTC"};

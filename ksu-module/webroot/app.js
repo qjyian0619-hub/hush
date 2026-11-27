@@ -101,7 +101,7 @@ function setStatus(state, title, detail = '') {
 
 function renderState(state) {
   if (!zones.has(state.zone)) {
-    throw new Error('当前时区不在可选列表内，请更新地区隐私模块');
+    throw new Error('当前时区不在可选列表内，请更新 Quiet Meridian 模块');
   }
 
   enabled.checked = state.enabled;
@@ -112,7 +112,7 @@ function renderState(state) {
   if (!state.enabled) {
     setStatus('inactive', '保护已关闭');
   } else if (state.managerEnabled && state.sharedPreferences) {
-    setStatus('active', '保护已开启');
+    setStatus('active', '运行中');
   } else {
     setStatus('pending', '等待生效', 'KernelSU 模块状态尚未同步');
   }

@@ -1,6 +1,9 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.local.regionguard" android:versionCode="9" android:versionName="1.9.1">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.local.regionguard" android:versionCode="10" android:versionName="1.0">
   <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="36" />
-  <application android:label="地区隐私" android:description="@string/module_description" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false" android:supportsRtl="true" android:extractNativeLibs="false">
+  <application android:label="Quiet Meridian" android:description="@string/module_description"
+      android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"
+      android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false"
+      android:supportsRtl="true" android:extractNativeLibs="false">
     <activity android:name=".MainActivity" android:exported="true">
       <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="de.robv.android.xposed.category.MODULE_SETTINGS" /></intent-filter>
     </activity>
